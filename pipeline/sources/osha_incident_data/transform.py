@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Optional, Union
 import pandas as pd
 
-from pipeline.sources.osha_incident_data.transform_helper import classify_narrative
-from pipeline.sources.osha_incident_data.load_helper import generate_control_samples
+from pipeline.sources.osha_incident_data.helpers.transform_helper import classify_narrative
+from pipeline.sources.osha_incident_data.helper.load_helper import generate_control_samples
 
 
 def filter_environmental_incidents(
