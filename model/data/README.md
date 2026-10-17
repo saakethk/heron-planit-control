@@ -7,11 +7,13 @@ Contains all data sources necessary for this project.
   - 343 power plants in florida (sufficient number)
 - weather (temperature, humidity, conditions - raining, snowing, ect.) (realtime and historical)
   - https://open-meteo.com
+  - https://cds.climate.copernicus.eu/datasets/reanalysis-era5-single-levels?tab=overview
 - extreme weather events (flooding, lightning, wildfire) (realtime and historical)
   - historical: https://open-meteo.com
   - realtime: https://www.weatherapi.com, 
   - National Levee Database (NLD):
   - https://tidesandcurrents.noaa.gov
+  - wildfire (NASA FIRMS)
 - soil saturation
   - https://open-meteo.com
 - wildlife sightings (potentially user-reported) (need to figure out)
