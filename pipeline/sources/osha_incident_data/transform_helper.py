@@ -35,7 +35,7 @@ PATTERNS = {
         r")\b",
         re.IGNORECASE,
     ),
-    "Wildlife (Animals, Insects, ect.)": re.compile(
+    "Wildlife": re.compile(
         r"\b("
         r"(?:stung|bitten|attacked|mauled|trampled|kicked|gored|swarmed)\s*by\s*(?:an?|the|\d+)?\s*\w+|"
         r"(?:dog|canine|snake|rattlesnake|spider|gator|alligator|bee[s]?|wasp[s]?|hornet[s]?|yellow\s*jacket[s]?)\s*bite[s]?|"
@@ -100,7 +100,7 @@ EXCLUSIONS = {
         r")\b",
         re.IGNORECASE,
     ),
-    "Wildlife (Animals, Insects, ect.)": re.compile(
+    "Wildlife": re.compile(
         r"\b("
         r"butterfly\s*valve|"
         r"hog\s*(?:ring|tie|wire|feeder|panel|slat)|"
@@ -117,11 +117,13 @@ EXCLUSIONS = {
     ),
 }
 
+CRITICAL_EVENTS = {"Lightning", "Wildfire", "Flood"}
+
 PRIORITY_ORDER = [
     "Lightning",
     "Extreme Heat",
     "Flood",
-    "Wildlife (Animals, Insects, ect.)",
+    "Wildlife",
     "Soil Saturation",
     "Wildfire",
 ]
@@ -152,14 +154,18 @@ def classify_narrative(narrative: Optional[str]) -> str:
             ):
                 continue
 
-        elif category == "Wildlife (Animals, Insects, ect.)":
-            if EXCLUSIONS["Wildlife (Animals, Insects, ect.)"].search(narrative) and not re.search(
+        elif category == "Wildlife":
+            if EXCLUSIONS["Wildlife"].search(narrative) and not re.search(
                 r"\b(stung|bitten|bite|sting|attacked|mauled|envenomation)\b",
                 narrative,
                 re.IGNORECASE,
             ):
                 continue
 
+        if category in CRITICAL_EVENTS:
+            return "Critical Events (Lightning, Wildfire, Flood)"
+
         return category
 
     return "Other (None of the above)"
+
