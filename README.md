@@ -1,5 +1,19 @@
 # swamphacks-project
 
+## Plan
+Combining series of information sources into a unified database that can be used to extract real-time insights.
+
+It will be able to:
+- watch the environment around every job site to keep utility field crews safe by bringing scattered hazard data together
+  - combine planet conditions like weather, extreme heat, lightning, flooding, wildfire, soil saturation, and wildlife sightings into one picture per site.
+- It should warn crews as soon as risk spikes. For example:
+  - Lightning: any strike within 10 miles triggers a stop-work alert with a 30-minute all-clear countdown that restarts with each new strike
+  - Flooding: sites along rivers, such as the Mississippi, get a flood-risk warning after a night of heavy rain 
+- Daily next-day safety briefing: Every day at 6pm it sends a next-day safety report
+- Crew hazard reporting
+- Supervisor PlanIt Dashboard: A map that ranks sites by risk, showing supervisors where to focus their attention and resources first
+- Hazard Index (0-10): A machine learning (ML) model trained on historical weather and and environmental data that on-site workers actually face
+
 ## Targeted Tracks:
 
 ### Sperry Tech - PlanIt Control
