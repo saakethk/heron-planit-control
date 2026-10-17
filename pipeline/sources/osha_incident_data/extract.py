@@ -21,12 +21,12 @@ def download_incident_csv(output_path = None) -> Path:
     Contains all 100,000+ severe injury records from 2015 to present.
     """
     if output_path is None:
-        output_path = Path(__file__).resolve().parent.parent / "data" / "osha_incident_data.csv"
+        output_path = Path(__file__).resolve().parent.parent.parent / "data" / "osha_incident_data.csv"
 
     dest = Path(output_path)
     dest.parent.mkdir(parents=True, exist_ok=True)
 
-    print(f"Downloading full OSHA dataset from: {OSHA_ZIP_URL}...")
+    print(f"[OSHA] Downloading archive from {OSHA_ZIP_URL}")
     resp = requests.get(OSHA_ZIP_URL, headers=HEADERS, stream=True, timeout=180)
     resp.raise_for_status()
 
@@ -37,11 +37,11 @@ def download_incident_csv(output_path = None) -> Path:
             raise FileNotFoundError("No CSV file found inside the OSHA zip archive.")
 
         target_csv_name = csv_names[0]
-        print(f"Extracting '{target_csv_name}' -> {dest}...")
+        print(f"[OSHA] Extracting '{target_csv_name}' -> {dest.name}")
         with z.open(target_csv_name) as source, open(dest, "wb") as target:
             target.write(source.read())
 
-    print(f"Saved full CSV: {dest} ({dest.stat().st_size / (1024 * 1024):.2f} MB)")
+    print(f"[OSHA] Archive extracted: {dest} ({dest.stat().st_size / (1024 * 1024):.2f} MB)")
     return dest
 
 
