@@ -1,5 +1,41 @@
 # swamphacks-project
 
+## Actionable Items
+
+### Saaketh (Model/Backend)
+
+#### Actionable Items
+- Do EDA on the data
+- Clean necessary data
+- Create hazard model using historical data
+- Create backend scaffolding (with dummy endpoints)
+- Find way to store data in data warehouse or place where it can be updated via pipeline
+- Start populating backend dummy endpoints with functional endpoints
+
+#### Features to Implement
+- Building out the data storage and management pipelines
+- Building out the Hazard Model
+
+### Sai (Frontend)
+
+#### Actionable Items
+- Build basic scaffolding for an IOS app using either native Swift or a chosen framework
+- Test if these features are possible:
+  - Sending notifications
+  - Taking pictures
+  - Background tasks
+  - Displaying locations on map
+- Make a Figma mockup of the design
+- Build dummy version of app with dummy endpoints
+
+#### Features to Implement
+- Nice UI showing information in concise and intuitive manner (do research about similiar apps)
+  - Must show the Hazard Index
+  - Must have ability for crews to view a page that has a map and list of the most dangerous sites
+  - Serve notifications in real-time if API sends out a lightning strike warning
+  - Serve notifications at 6pm daily with summary
+  - Have ability for crew to report hazards with picture
+
 ## Plan
 Combining series of information sources into a unified database that can be used to extract real-time insights.
 
