@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def generate_control_samples(
-    input_csv_path: Optional[Union[str, Path]] = None,
+    input_data: Optional[Union[str, Path, pd.DataFrame]] = None,
     output_csv_path: Optional[Union[str, Path]] = None,
     start_date: Optional[Union[str, date]] = None,
     end_date: Optional[Union[str, date]] = None,
@@ -22,7 +22,7 @@ def generate_control_samples(
     output dates are completely reproducible.
 
     Args:
-        input_csv_path: Path to source environmental incidents CSV.
+        input_data: Pre-filtered DataFrame or path to source environmental incidents CSV.
         output_csv_path: Path to write generated control samples CSV.
         start_date: Lower bound for sampling range (defaults to dataset minimum).
         end_date: Upper bound for sampling range (defaults to dataset maximum).
@@ -32,14 +32,17 @@ def generate_control_samples(
     Returns:
         DataFrame with columns ['ID', 'Latitude', 'Longitude', 'Date'].
     """
-    if input_csv_path is None:
-        input_csv_path = Path(__file__).resolve().parent.parent / "data" / "environmental_incidents.csv"
+    if isinstance(input_data, pd.DataFrame):
+        df = input_data.copy()
+    else:
+        if input_data is None:
+            input_data = Path(__file__).resolve().parent.parent.parent / "data" / "environmental_incidents.csv"
 
-    input_path = Path(input_csv_path)
-    if not input_path.exists():
-        raise FileNotFoundError(f"Source incidents file not found: {input_path}")
+        input_path = Path(input_data)
+        if not input_path.exists():
+            raise FileNotFoundError(f"Source incidents file not found: {input_path}")
 
-    df = pd.read_csv(input_path, on_bad_lines="skip", low_memory=False)
+        df = pd.read_csv(input_path, on_bad_lines="skip", low_memory=False)
 
     date_col = "EventDate" if "EventDate" in df.columns else "Event Date"
     df["ParsedDate"] = pd.to_datetime(df[date_col], errors="coerce").dt.date
@@ -99,5 +102,5 @@ def generate_control_samples(
 
 
 if __name__ == "__main__":
-    output_file = Path(__file__).resolve().parent.parent / "data" / "control_samples.csv"
+    output_file = Path(__file__).resolve().parent.parent.parent / "data" / "control_samples.csv"
     generate_control_samples(output_csv_path=output_file)

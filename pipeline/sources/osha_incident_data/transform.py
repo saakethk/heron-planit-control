@@ -1,10 +1,11 @@
-"""Reduces all the incidents to just a smaller subset of the relevant data for environmental-caused incidents."""
+"""Reduces raw incidents and merges with control samples into a single dataset."""
 
 from pathlib import Path
 from typing import Optional, Union
 import pandas as pd
 
 from pipeline.sources.osha_incident_data.transform_helper import classify_narrative
+from pipeline.sources.osha_incident_data.load_helper import generate_control_samples
 
 
 def filter_environmental_incidents(
@@ -26,18 +27,65 @@ def filter_environmental_incidents(
     return filtered_df
 
 
+def build_unified_dataset(
+    incidents_df: pd.DataFrame,
+    control_df: pd.DataFrame,
+    date_col: str = "EventDate",
+) -> pd.DataFrame:
+    """Standardizes and merges positive incident records with control (non-incident) records.
+
+    Keeps only necessary modeling columns:
+    ['ID', 'Latitude', 'Longitude', 'Date', 'incident_type', 'is_incident']
+    """
+    if date_col not in incidents_df.columns and "Event Date" in incidents_df.columns:
+        date_col = "Event Date"
+
+    # Standardize positive incident records (original OSHA ID preserved)
+    positives = pd.DataFrame(
+        {
+            "ID": incidents_df["ID"].astype(str),
+            "Latitude": incidents_df["Latitude"],
+            "Longitude": incidents_df["Longitude"],
+            "Date": pd.to_datetime(incidents_df[date_col], errors="coerce").dt.date,
+            "incident_type": incidents_df["incident_type"],
+            "is_incident": True,
+        }
+    )
+
+    # Standardize control / non-incident records (suffixed with _ctrl)
+    negatives = pd.DataFrame(
+        {
+            "ID": control_df["ID"].astype(str) + "_ctrl",
+            "Latitude": control_df["Latitude"],
+            "Longitude": control_df["Longitude"],
+            "Date": pd.to_datetime(control_df["Date"], errors="coerce").dt.date,
+            "incident_type": "None",
+            "is_incident": False,
+        }
+    )
+
+    unified_df = pd.concat([positives, negatives], ignore_index=True)
+    return unified_df
+
+
 def transform_incident_data(
     input_csv_path: Optional[Union[str, Path]] = None,
     output_csv_path: Optional[Union[str, Path]] = None,
+    random_state: int = 42,
 ) -> pd.DataFrame:
-    """Reads OSHA incident CSV, filters to environmental categories, and saves the result."""
+    """Reads raw OSHA incident CSV, filters environmental incidents, generates control
+
+    pseudo-absences, and produces one clean dataset containing both incident and
+    non-incident records with essential labels.
+    """
     base_dir = Path(__file__).resolve().parent.parent.parent
+    data_dir = base_dir / "data"
 
     if input_csv_path is None:
-        input_csv_path = base_dir / "data" / "osha_incident_data.csv"
+        input_csv_path = data_dir / "osha_incident_data.csv"
 
     if output_csv_path is None:
-        output_csv_path = base_dir / "data" / "environmental_incidents.csv"
+        output_csv_path = data_dir / "clean_incident_data.csv"
 
     input_path = Path(input_csv_path)
     output_path = Path(output_csv_path)
@@ -49,15 +97,28 @@ def transform_incident_data(
     df = pd.read_csv(input_path, on_bad_lines="skip", low_memory=False)
 
     filtered_df = filter_environmental_incidents(df)
+    print(f"[TRANSFORM] Retained {len(filtered_df):,} environmental incidents")
+
+    # Generate pseudo-absence control samples
+    print("[TRANSFORM] Generating deterministic control samples...")
+    control_df = generate_control_samples(
+        input_data=filtered_df,
+        buffer_days=30,
+        random_state=random_state,
+    )
+
+    # Merge into single clean dataset with essential labels
+    print("[TRANSFORM] Compiling unified incident & non-incident dataset...")
+    unified_df = build_unified_dataset(filtered_df, control_df)
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    filtered_df.to_csv(output_path, index=False)
-    print(f"[TRANSFORM] Retained {len(filtered_df):,} environmental incidents -> {output_path.name}")
+    unified_df.to_csv(output_path, index=False)
+    print(f"[TRANSFORM] Saved {len(unified_df):,} total records ({len(filtered_df):,} incident, {len(control_df):,} non-incident) -> {output_path.name}")
 
     input_path.unlink()
     print(f"[CLEANUP] Removed raw source file: {input_path.name}")
 
-    return filtered_df
+    return unified_df
 
 
 if __name__ == "__main__":
