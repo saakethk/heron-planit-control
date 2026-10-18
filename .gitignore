@@ -1,5 +1,37 @@
-venv
-.venv
+# Virtual environments & dependencies
+venv/
+.venv/
+backend/.venv/
+env/
+ENV/
+*.egg-info/
+__pycache__/
+*.py[cod]
+
+# Secrets & Environment variables
 .env
+.env.local
+backend/.env
+
+# macOS system files
 .DS_Store
-__pycache__
+.AppleDouble
+.LSOverride
+._*
+**/.DS_Store
+
+# Xcode & iOS artifacts
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+*.xcuserstate
+project.xcworkspace
+frontend/ios/CrewSafe.xcodeproj
+frontend/ios/build/
+*.hmap
+*.ipa
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
