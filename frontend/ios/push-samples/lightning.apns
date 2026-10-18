@@ -1,0 +1,16 @@
+{
+  "Simulator Target Bundle": "com.swamphacks.crewsafe",
+  "aps": {
+    "alert": {
+      "title": "STOP WORK: Lightning",
+      "subtitle": "Port Everglades",
+      "body": "Strike 4.2 mi away. Shelter now. All clear in 30 minutes if there are no more strikes."
+    },
+    "sound": "default",
+    "interruption-level": "time-sensitive",
+    "category": "LIGHTNING_HOLD",
+    "thread-id": "site-617"
+  },
+  "alert_id": "push-lightning-1",
+  "site_id": 617
+}
