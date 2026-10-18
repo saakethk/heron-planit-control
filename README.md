@@ -191,32 +191,32 @@ Overall Accuracy                             0.9450 (94.5%)
 
 ### Visual Evaluation Graphs
 
-The following validation artifacts were generated during model benchmarking and are preserved in [`pipeline/model/artifacts/`](pipeline/model/artifacts/):
+The following validation artifacts were generated during model benchmarking and are preserved in [`backend/pipeline/model/artifacts/`](backend/pipeline/model/artifacts/):
 
 #### 1. Normalized Confusion Matrix Heatmap
 Diagonal cells display true-positive recognition across all 5 hazard classes. Off-diagonal cells demonstrate near-zero residual misclassification.
 
-![Confusion Matrix](pipeline/model/artifacts/confusion_matrix.svg)
+![Confusion Matrix](backend/pipeline/model/artifacts/confusion_matrix.svg)
 
 ---
 
 #### 2. Multi-Class ROC Curves (One-vs-Rest)
 Evaluates classification discrimination across varying decision thresholds, achieving a **0.9722 Macro ROC-AUC**:
 
-![ROC Curves](pipeline/model/artifacts/roc_curves.svg)
+![ROC Curves](backend/pipeline/model/artifacts/roc_curves.svg)
 
 ---
 
 #### 3. Feature Importance Analysis
 Identifies the primary physical drivers guiding model decisions:
 
-![Feature Importance](pipeline/model/artifacts/feature_importance.svg)
+![Feature Importance](backend/pipeline/model/artifacts/feature_importance.svg)
 
 ---
 
 ### Continuous Learning & Retraining Pipeline
 
-Heron prevents model drift by maintaining an active retraining loop ([`pipeline/model/continuous_trainer.py`](pipeline/model/continuous_trainer.py)):
+Heron prevents model drift by maintaining an active retraining loop ([`backend/pipeline/model/continuous_trainer.py`](backend/pipeline/model/continuous_trainer.py)):
 1. **Historical Anchors**: Preserves 47,150 historical records in `incidents.db` (OSHA Severe Injuries, NOAA Storm Events, NIFC Wildfire Ignitions).
 2. **Streaming Buffer**: Ingests new live telemetry observations and verified crew incident reports into `stream_training_records`.
 3. **Automated Hot-Swap**: When scheduled, the trainer fits a candidate model on combined historical and recent data, runs automated validation on a holdout test split, and atomically hot-swaps `best_hazard_model.joblib` with zero server downtime only if **Macro F1 $\ge 0.80$**.
@@ -334,7 +334,7 @@ uvicorn crewsafe.api.main:app --host 0.0.0.0 --port 8000
 - **Interactive Swagger API Documentation**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - **Health Check Endpoint**: [http://localhost:8000/api/v1/health](http://localhost:8000/api/v1/health)
 
-*(The backend will seed all 346 EIA power facilities from `pipeline/data/incidents.db` and begin telemetry ingestion).*
+*(The backend will seed all 346 EIA power facilities from `backend/pipeline/data/incidents.db` and begin telemetry ingestion).*
 
 ---
 
@@ -394,43 +394,46 @@ backend/.venv/bin/pytest -q backend/tests
 
 ## 📂 Repository Organization
 
+The repository is organized into two comprehensive modules: **Backend** (server, ML modeling, and telemetry ingestion) and **Frontend** (native iOS app):
+
 ```
 swamphacks-project/
-├── backend/                        # FastAPI + Async Event Streaming Pipeline
-│   ├── crewsafe/
+├── backend/                        # Comprehensive Backend & ML Pipeline Tier
+│   ├── crewsafe/                   # Production Real-Time Engine (FastAPI 0.115)
 │   │   ├── api/                    # REST routes, auth, WebSocket hub (/ws/updates)
 │   │   ├── contracts/              # Strict Pydantic contracts mirroring Swift models
-│   │   ├── ingestion/              # Pollers: Open-Meteo, NWS CAP 1.2, GOES-19 S3
-│   │   ├── messaging/              # Message bus & topics (in-memory / Kafka)
+│   │   ├── ingestion/              # Real-time pollers: Open-Meteo, NWS, GOES-19 GLM
+│   │   ├── messaging/              # At-least-once message bus (in-memory / Kafka)
 │   │   ├── processing/             # Features, transformer, scoring engine, alerts
 │   │   │   ├── scoring/            # Model adapters & operational rule engine
 │   │   │   └── simulate.py         # Scripted emergency event injection engine
 │   │   ├── storage/                # Repository interface, in-memory state, SQLite
 │   │   └── prompt.py               # Natural-language CLI for live judging simulations
+│   │
+│   ├── pipeline/                   # Data Science, ML Modeling & Retraining Pipeline
+│   │   ├── data/
+│   │   │   ├── eia860m.xlsx        # Official EIA-860M monthly power plant census
+│   │   │   └── incidents.db        # 47,150 historical records (OSHA, NOAA, NIFC, FEMA)
+│   │   ├── model/
+│   │   │   ├── artifacts/          # Serialized model, scaler, and evaluation SVG plots
+│   │   │   ├── benchmark.py        # 4-architecture benchmark harness
+│   │   │   ├── continuous_trainer.py # Continuous learning loop & hot-swap validator
+│   │   │   ├── dataset.py          # 28-feature standardized engineering pipeline
+│   │   │   └── evaluate_and_plot.py # ROC curves, confusion matrix, feature importances
+│   │   └── ingestion/              # Historical data harvesting and cleaning
+│   │
 │   ├── tests/                      # Automated test suite (28 passing pytest tests)
 │   └── requirements.txt            # Python dependencies
 │
-├── frontend/                       # Native iOS Client Application
-│   └── ios/
-│       ├── CrewSafe/               # Native Swift source code (iOS 17+)
-│       │   ├── AppStore.swift      # Centralized Observable state store & WebSocket consumer
-│       │   ├── Models/             # Swift data models decoding backend JSON contracts
-│       │   ├── Services/           # HazardAPI, WebSocket, Location, BackgroundRefresh
-│       │   └── Views/              # DashboardView, SitesView, AlertsView, ReportHazardView
-│       ├── project.yml             # Declarative XcodeGen project specification
-│       └── Assets.xcassets/        # AppIcon & design tokens
-│
-└── pipeline/                       # Data Science, ML Modeling & Evaluation
-    ├── data/
-    │   ├── eia860m.xlsx            # Official EIA-860M monthly power plant census
-    │   └── incidents.db            # 47,150 historical records (OSHA, NOAA, NIFC, FEMA)
-    ├── model/
-    │   ├── artifacts/              # Serialized model, scaler, and evaluation SVG plots
-    │   ├── benchmark.py            # 4-architecture benchmark harness
-    │   ├── continuous_trainer.py   # Continuous learning loop & hot-swap validator
-    │   ├── dataset.py              # 28-feature standardized engineering pipeline
-    │   └── evaluate_and_plot.py    # ROC curves, confusion matrix, and feature importances
-    └── ingestion/                  # Historical data harvesting and cleaning
+└── frontend/                       # Native iOS Client Application ("Heron")
+    └── ios/
+        ├── CrewSafe/               # Native Swift source code (iOS 17+)
+        │   ├── AppStore.swift      # Centralized Observable state store & WebSocket consumer
+        │   ├── Models/             # Swift data models decoding backend JSON contracts
+        │   ├── Services/           # HazardAPI, WebSocket, Location, BackgroundRefresh
+        │   └── Views/              # DashboardView, SitesView, AlertsView, ReportHazardView
+        ├── project.yml             # Declarative XcodeGen project specification
+        └── Assets.xcassets/        # AppIcon & design tokens
 ```
 
 ---

@@ -84,8 +84,13 @@ class Settings:
     # Fabricated demo alerts and crew reports; only meaningful with the dummy world.
     seed_demo_history: bool = field(default_factory=lambda: _flag("SEED_DEMO_HISTORY", not _real()))
 
-    # The data/ML pipeline at the repo root: site registry, FEMA flood zones, trained model.
-    pipeline_dir: str = field(default_factory=lambda: _env("PIPELINE_DIR", str(REPO_DIR / "pipeline")))
+    # The data/ML pipeline (site registry, FEMA flood zones, trained model).
+    pipeline_dir: str = field(
+        default_factory=lambda: _env(
+            "PIPELINE_DIR",
+            str(BACKEND_DIR / "pipeline") if (BACKEND_DIR / "pipeline").exists() else str(REPO_DIR / "pipeline"),
+        )
+    )
     # Model: "pipeline" (the pipeline's trained classifier), "dummy" (formula stand-in), or "lightgbm".
     model_kind: str = field(default_factory=lambda: _by_mode("MODEL_KIND", "pipeline", "dummy"))
     model_path: str = field(default_factory=lambda: _env("MODEL_PATH", ""))
