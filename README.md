@@ -2,7 +2,7 @@
   <img src="assets/logo.png" alt="Heron App Logo" width="160" style="border-radius: 28px;" />
 </p>
 
-<h1 align="center">🪶 Heron</h1>
+<h1 align="center">Heron</h1>
 <p align="center">
   <b>Real-Time Environmental Intelligence & Worker Safety Platform for Florida Utility Field Crews</b>
 </p>
