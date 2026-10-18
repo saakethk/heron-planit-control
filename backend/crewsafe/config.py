@@ -62,7 +62,7 @@ class Settings:
     alert_source: str = field(default_factory=lambda: _by_mode("ALERT_SOURCE", "nws", "dummy"))
     lightning_source: str = field(default_factory=lambda: _by_mode("LIGHTNING_SOURCE", "glm", "dummy"))  # glm | dummy | none
     nws_user_agent: str = field(
-        default_factory=lambda: _env("NWS_USER_AGENT", "CrewSafe/0.1 (swamphacks; contact@example.com)"))
+        default_factory=lambda: _env("NWS_USER_AGENT", "Heron/0.1 (swamphacks; contact@example.com)"))
     # Optional paid Open-Meteo key; without it the free tier allows ~10,000 location-calls a day.
     open_meteo_api_key: str = field(default_factory=lambda: _env("OPEN_METEO_API_KEY", ""))
     # Sites closer than this share one Open-Meteo location (223 locations for 346 plants at 0.1°,

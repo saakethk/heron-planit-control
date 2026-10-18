@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         await stop(pipeline)
 
     app = FastAPI(
-        title="CrewSafe API",
+        title="Heron API",
         version="0.1.0",
         summary="Hazard Index, lightning holds, alerts, briefings, and crew reports for Florida utility sites.",
         lifespan=lifespan,

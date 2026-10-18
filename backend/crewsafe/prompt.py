@@ -54,7 +54,7 @@ def show(result: dict) -> None:
 
 
 def repl(base: str) -> None:
-    print(f"CrewSafe prompt  →  {base}")
+    print(f"Heron prompt  →  {base}")
     print("Type 'help' for commands, 'quit' to exit.")
     while True:
         try:
@@ -78,7 +78,7 @@ def repl(base: str) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Send a simulate prompt to a running CrewSafe backend.")
+    parser = argparse.ArgumentParser(description="Send a simulate prompt to a running Heron backend.")
     parser.add_argument("prompt", nargs="*", help="e.g. 'lightning at 664' (omit for an interactive prompt)")
     parser.add_argument("--url", default=DEFAULT_URL, help=f"API base (default {DEFAULT_URL})")
     args = parser.parse_args(argv)
