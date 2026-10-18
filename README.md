@@ -30,29 +30,11 @@ Heron fuses high-frequency telemetry from orbital weather satellites, ground met
 
 ```mermaid
 flowchart LR
-    subgraph DataFeeds["📡 Real-Time Telemetry"]
-        GOES["NOAA GOES-19 Satellite<br/>(GLM Lightning Flashes)"]
-        NWS["NWS Weather Alerts<br/>(CAP 1.2 County Warnings)"]
-        OpenMeteo["Open-Meteo Physical Model<br/>(Temp, Wind Gusts, Solar)"]
-        ERA5["ECMWF ERA5-Land<br/>(3-Layer Soil Moisture)"]
-        FEMA["FEMA NFHL Layer 28<br/>(100-Year Floodplains)"]
-    end
-
-    subgraph BackendTier["⚙️ Heron Backend Engine (FastAPI)"]
-        Poller["Async Data Pollers"]
-        Transformer["28-Feature Normalizer"]
-        ML["Multi-Hazard GBDT Model<br/>(Macro F1: 0.945 | ROC: 0.972)"]
-        Rules["OSHA Safety Guardrails<br/>• 10-Mile Lightning Hold<br/>• Heat Index ≥ 105°F / 115°F"]
-        Scorer["Calibrated 0–10 Hazard Index"]
-        WebSocket["WebSocket Real-Time Hub<br/>(/api/v1/ws/updates)"]
-    end
-
-    subgraph ClientTier["📱 Client Experience"]
-        iOS["Heron iOS Native App<br/>• 0–10 Live Gauge<br/>• Stop-Work Timer<br/>• Push Notifications"]
-        ControlRoom["PlanIt Supervisor Map<br/>• Ranked Site Risk<br/>• 346 Plant Pins<br/>• Crew Photo Reports"]
-    end
-
-    DataFeeds --> Poller --> Transformer --> ML & Rules --> Scorer --> WebSocket --> iOS & ControlRoom
+    A["📡 Environmental & Satellite<br/>Data Sources"] --> B["⚙️ Ingestion & Feature<br/>Processing Pipeline"]
+    B --> C["🧠 Multi-Hazard ML Model &<br/>OSHA Safety Guardrails"]
+    C --> D["⚡ Real-Time Streaming<br/>& API Gateway"]
+    D --> E["📱 Field Linemen<br/>Mobile App"]
+    D --> F["🗺️ Supervisor PlanIt<br/>Control Room"]
 ```
 
 ---
