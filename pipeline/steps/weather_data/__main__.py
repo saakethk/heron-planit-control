@@ -9,6 +9,10 @@ from pipeline.steps.weather_data.extract import (
     fetch_weather_for_record,
     get_openmeteo_client,
 )
+from pipeline.steps.weather_data.arco_era5 import (
+    fetch_weather_arco_era5,
+    get_arco_client,
+)
 from pipeline.steps.weather_data.load import append_weather_batch, init_weather_table
 
 
@@ -26,9 +30,10 @@ def get_pending_records(conn: sqlite3.Connection, limit: Optional[int] = None) -
     return pd.read_sql(query, conn)
 
 
-def run(batch_size: int = 50, limit: Optional[int] = None):
+def run(batch_size: int = 50, limit: Optional[int] = None, engine: str = "arco_era5"):
     """Fetches weather metrics with progressive batch writing and auto-resume.
 
+    - engine: 'arco_era5' (Google Cloud ARCO-ERA5 direct access) or 'openmeteo' (API fallback).
     - Reads only pending IDs not already in weather_data.
     - Flushes batches to SQLite every `batch_size` records.
     - If interrupted, restarting automatically resumes from the last written record.
@@ -46,14 +51,20 @@ def run(batch_size: int = 50, limit: Optional[int] = None):
         print(f"[PIPELINE:WEATHER] All records already processed ({already_done:,} records in weather_data). Nothing to do.")
         return
 
-    print(f"[PIPELINE:WEATHER] Already processed: {already_done:,} | Pending to fetch: {total_pending:,}")
-    client = get_openmeteo_client()
+    print(f"[PIPELINE:WEATHER] Engine: {engine.upper()} | Already processed: {already_done:,} | Pending to fetch: {total_pending:,}")
+
+    if engine == "arco_era5":
+        client = get_arco_client()
+        fetch_fn = fetch_weather_arco_era5
+    else:
+        client = get_openmeteo_client()
+        fetch_fn = fetch_weather_for_record
 
     current_batch = []
     processed_count = 0
 
     for idx, (_, row) in enumerate(pending_df.iterrows(), start=1):
-        weather_row = fetch_weather_for_record(
+        weather_row = fetch_fn(
             client=client,
             record_id=row["ID"],
             latitude=row["Latitude"],
