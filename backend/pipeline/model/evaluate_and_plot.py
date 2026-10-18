@@ -214,14 +214,132 @@ def run_evaluation_and_generate_artifacts():
         shutil.copy(roc_path, ASSETS_DIR / "roc_curves.svg")
 
     # 3. Feature Importances
-    if hasattr(model, "feature_importances_"):
-        importances = model.feature_importances_
+    importances = getattr(model, "feature_importances_", None)
+    if importances is not None:
         fi_path = ARTIFACTS_DIR / "feature_importance.svg"
         generate_feature_importance_svg(importances, FEATURE_COLS, fi_path)
         print(f"[ARTIFACT] Saved Feature Importance plot to {fi_path}")
         if ASSETS_DIR.exists():
             import shutil
             shutil.copy(fi_path, ASSETS_DIR / "feature_importance.svg")
+
+    # Export high-resolution PNGs via Matplotlib
+    try:
+        import matplotlib
+        matplotlib.use("Agg")
+        import matplotlib.pyplot as plt
+
+        plt.style.use("dark_background")
+        plt.rcParams["font.sans-serif"] = "Helvetica, Arial, sans-serif"
+
+        # Feature Importance PNG
+        if importances is not None:
+            indices = np.argsort(importances)[::-1][:15]
+            top_imps = importances[indices]
+            top_names = [FEATURE_COLS[i] for i in indices]
+
+            fig, ax = plt.subplots(figsize=(10, 6.5), dpi=300)
+            fig.patch.set_facecolor("#0f172a")
+            ax.set_facecolor("#0f172a")
+
+            colors = [
+                "#38bdf8" if "fema" in n else ("#f59e0b" if "temp" in n else ("#3b82f6" if "precip" in n or "rain" in n else "#10b981"))
+                for n in top_names
+            ]
+            y_pos = np.arange(len(top_names))
+            bars = ax.barh(y_pos, top_imps[::-1] * 100, color=colors[::-1], height=0.7, edgecolor="#334155", linewidth=0.8)
+            ax.set_yticks(y_pos)
+            ax.set_yticklabels(top_names[::-1], fontsize=10, color="#cbd5e1")
+            ax.set_xlabel("Relative Importance (%)", fontsize=12, color="#f8fafc", fontweight="bold", labelpad=10)
+            ax.set_title("Top 15 Feature Importances (GBDT Multi-Hazard)", fontsize=15, color="#f8fafc", fontweight="bold", pad=15)
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
+            ax.spines["left"].set_color("#334155")
+            ax.spines["bottom"].set_color("#334155")
+            ax.tick_params(colors="#94a3b8")
+            ax.grid(axis="x", linestyle="--", alpha=0.25, color="#64748b")
+
+            for bar in bars:
+                w = bar.get_width()
+                ax.text(w + 0.15, bar.get_y() + bar.get_height() / 2, f"{w:.2f}%", va="center", ha="left", fontsize=9, color="#94a3b8", fontweight="bold")
+
+            ax.set_xlim(0, max(top_imps * 100) * 1.15)
+            plt.tight_layout()
+            fi_png = ARTIFACTS_DIR / "feature_importance.png"
+            fig.savefig(fi_png, facecolor=fig.get_facecolor(), bbox_inches="tight")
+            if ASSETS_DIR.exists():
+                import shutil
+                shutil.copy(fi_png, ASSETS_DIR / "feature_importance.png")
+            plt.close(fig)
+            print(f"[ARTIFACT] Saved Feature Importance PNG to {fi_png}")
+
+        # Confusion Matrix PNG
+        fig, ax = plt.subplots(figsize=(8, 7), dpi=300)
+        fig.patch.set_facecolor("#0f172a")
+        ax.set_facecolor("#0f172a")
+        cm_norm = cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
+        im = ax.imshow(cm_norm, interpolation="nearest", cmap=plt.cm.Greens)
+        ax.set_title("Normalized Confusion Matrix Heatmap", fontsize=15, color="#f8fafc", fontweight="bold", pad=15)
+        tick_marks = np.arange(len(class_names))
+        ax.set_xticks(tick_marks)
+        ax.set_xticklabels(class_names, rotation=30, ha="right", fontsize=10, color="#cbd5e1")
+        ax.set_yticks(tick_marks)
+        ax.set_yticklabels(class_names, fontsize=10, color="#cbd5e1")
+        ax.set_ylabel("True Ground-Truth Class", fontsize=12, color="#f8fafc", fontweight="bold", labelpad=10)
+        ax.set_xlabel("Predicted Hazard Class", fontsize=12, color="#f8fafc", fontweight="bold", labelpad=10)
+        thresh = cm_norm.max() / 2.0
+        for i in range(cm.shape[0]):
+            for j in range(cm.shape[1]):
+                count = cm[i, j]
+                pct = cm_norm[i, j] * 100
+                text_color = "#ffffff" if cm_norm[i, j] > thresh else ("#f8fafc" if i == j else "#f43f5e")
+                ax.text(j, i - 0.12, f"{count}", ha="center", va="center", color=text_color, fontsize=12, fontweight="bold")
+                ax.text(j, i + 0.18, f"{pct:.1f}%", ha="center", va="center", color=text_color, fontsize=9, alpha=0.85)
+
+        ax.spines["top"].set_color("#334155")
+        ax.spines["right"].set_color("#334155")
+        ax.spines["left"].set_color("#334155")
+        ax.spines["bottom"].set_color("#334155")
+        plt.tight_layout()
+        cm_png = ARTIFACTS_DIR / "confusion_matrix.png"
+        fig.savefig(cm_png, facecolor=fig.get_facecolor(), bbox_inches="tight")
+        if ASSETS_DIR.exists():
+            import shutil
+            shutil.copy(cm_png, ASSETS_DIR / "confusion_matrix.png")
+        plt.close(fig)
+        print(f"[ARTIFACT] Saved Confusion Matrix PNG to {cm_png}")
+
+        # ROC Curves PNG
+        fig, ax = plt.subplots(figsize=(9, 6.5), dpi=300)
+        fig.patch.set_facecolor("#0f172a")
+        ax.set_facecolor("#0f172a")
+        colors_roc = ["#10b981", "#ef4444", "#3b82f6", "#a855f7", "#f97316"]
+        for idx, (cls_name, color) in enumerate(zip(class_names, colors_roc)):
+            ax.plot(fpr_dict[idx], tpr_dict[idx], color=color, lw=2.5, label=f"{cls_name} (AUC = {auc_dict[idx]:.4f})")
+        ax.plot([0, 1], [0, 1], color="#64748b", lw=1.5, linestyle="--")
+        ax.set_xlim([0.0, 1.0])
+        ax.set_ylim([0.0, 1.05])
+        ax.set_xlabel("False Positive Rate (1 - Specificity)", fontsize=12, color="#f8fafc", fontweight="bold", labelpad=10)
+        ax.set_ylabel("True Positive Rate (Sensitivity)", fontsize=12, color="#f8fafc", fontweight="bold", labelpad=10)
+        ax.set_title("Multi-Hazard ROC Curves (One-vs-Rest AUC)", fontsize=15, color="#f8fafc", fontweight="bold", pad=15)
+        ax.legend(loc="lower right", frameon=True, facecolor="#1e293b", edgecolor="#334155", fontsize=10, labelcolor="#f8fafc")
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.spines["left"].set_color("#334155")
+        ax.spines["bottom"].set_color("#334155")
+        ax.tick_params(colors="#94a3b8")
+        ax.grid(True, linestyle="--", alpha=0.25, color="#64748b")
+        plt.tight_layout()
+        roc_png = ARTIFACTS_DIR / "roc_curves.png"
+        fig.savefig(roc_png, facecolor=fig.get_facecolor(), bbox_inches="tight")
+        if ASSETS_DIR.exists():
+            import shutil
+            shutil.copy(roc_png, ASSETS_DIR / "roc_curves.png")
+        plt.close(fig)
+        print(f"[ARTIFACT] Saved ROC Curves PNG to {roc_png}")
+
+    except Exception as e:
+        print(f"[NOTE] Matplotlib PNG generation skipped: {e}")
 
     # Print Summary Report
     print("\n" + "=" * 70)

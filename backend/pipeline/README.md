@@ -218,21 +218,21 @@ Overall Accuracy                             0.9450 (94.5%)
 Illustrates strong diagonal true-positive classification with minimal off-diagonal cross-hazard confusion:
 
 <p align="center">
-  <img src="model/artifacts/confusion_matrix.svg" alt="Normalized Confusion Matrix Heatmap" width="85%" />
+  <img src="model/artifacts/confusion_matrix.png" alt="Normalized Confusion Matrix Heatmap" width="85%" />
 </p>
 
 #### 2. Multi-Class ROC Curves (One-vs-Rest)
 Area Under the Curve (AUC) spans 0.96 to 0.99 across all operational hazard classes:
 
 <p align="center">
-  <img src="model/artifacts/roc_curves.svg" alt="Multi-Class ROC Curves" width="85%" />
+  <img src="model/artifacts/roc_curves.png" alt="Multi-Class ROC Curves" width="85%" />
 </p>
 
 #### 3. Top Feature Importance Analysis
 Gini split gains reveal that Apparent Heat Index, compound FEMA flood interactions, and volumetric soil moisture drive the model's core partitions:
 
 <p align="center">
-  <img src="model/artifacts/feature_importance.svg" alt="Top Feature Importances" width="85%" />
+  <img src="model/artifacts/feature_importance.png" alt="Top Feature Importances" width="85%" />
 </p>
 
 ---
