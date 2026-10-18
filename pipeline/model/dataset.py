@@ -6,7 +6,7 @@ deterministic feature engineering, and exports a stratified train/test split.
 
 from pathlib import Path
 import sqlite3
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
@@ -44,23 +44,48 @@ FEATURE_COLS = [
     "Longitude",
 ]
 
-CLASS_NAMES = [
+CORE_METEOROLOGICAL_CLASSES = [
     "None",
     "Extreme Heat",
     "Flood",
+    "Lightning",
+    "Wildfire",
+]
+
+ALL_CLASSES = [
+    "None",
+    "Extreme Heat",
+    "Flood",
+    "Lightning",
+    "Wildfire",
     "Wildlife",
-    "Critical Events (Lightning, Wildfire)",
     "Soil Saturation",
 ]
 
+CLASS_NAMES = CORE_METEOROLOGICAL_CLASSES
 CLASS_TO_IDX = {name: i for i, name in enumerate(CLASS_NAMES)}
 IDX_TO_CLASS = {i: name for i, name in enumerate(CLASS_NAMES)}
 
 
-def load_raw_dataset(db_path: Path) -> pd.DataFrame:
-    """Queries and joins incident labels with weather metrics on ID."""
+def load_raw_dataset(db_path: Path, only_sampled: bool = True) -> pd.DataFrame:
+    """Queries and joins incident labels with weather metrics on ID.
+    
+    If `only_sampled=True` and rows with `is_sampled = 1` exist, restricts loading
+    strictly to those representative marked rows.
+    """
     with sqlite3.connect(db_path) as conn:
-        query = """
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA table_info(clean_incident_data)")
+        cols = [c[1] for c in cursor.fetchall()]
+
+        where_clause = ""
+        if only_sampled and "is_sampled" in cols:
+            cursor.execute("SELECT COUNT(*) FROM clean_incident_data WHERE is_sampled = 1")
+            cnt = cursor.fetchone()[0]
+            if cnt > 0:
+                where_clause = "WHERE c.is_sampled = 1"
+
+        query = f"""
             SELECT 
                 c.ID,
                 c.Latitude,
@@ -90,13 +115,33 @@ def load_raw_dataset(db_path: Path) -> pd.DataFrame:
                 w.soil_temperature_0_to_100cm_mean
             FROM clean_incident_data c
             INNER JOIN weather_data w ON c.ID = w.ID
+            {where_clause}
         """
         df = pd.read_sql(query, conn)
     return df
 
 
-def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
+def sample_balanced_per_category(
+    df: pd.DataFrame,
+    max_samples_per_class: int = 600,
+    random_state: int = 42,
+) -> pd.DataFrame:
+    """Downsamples over-represented categories so each category has a similar number of records."""
+    sampled_groups = [
+        g.sample(n=min(len(g), max_samples_per_class), random_state=random_state)
+        for _, g in df.groupby("incident_type")
+    ]
+    return pd.concat(sampled_groups).sample(frac=1.0, random_state=random_state).reset_index(drop=True)
+
+
+def engineer_features(
+    df: pd.DataFrame,
+    class_to_idx: Optional[Dict[str, int]] = None,
+) -> pd.DataFrame:
     """Adds cyclical month seasonality and cleans numerical values."""
+    if class_to_idx is None:
+        class_to_idx = CLASS_TO_IDX
+
     df = df.copy()
     dt = pd.to_datetime(df["Date"], errors="coerce")
     month = dt.dt.month.fillna(6).astype(int)
@@ -106,7 +151,7 @@ def engineer_features(df: pd.DataFrame) -> pd.DataFrame:
     df["month_cos"] = np.cos(2 * np.pi * month / 12.0)
 
     # Target indices
-    df["target_class"] = df["incident_type"].map(CLASS_TO_IDX)
+    df["target_class"] = df["incident_type"].map(class_to_idx)
     df["target_binary"] = df["is_incident"].astype(int)
 
     # Clean missing values if any
@@ -121,16 +166,41 @@ def get_stratified_dataset(
     db_path: Path,
     test_size: float = 0.2,
     random_state: int = 42,
+    max_samples_per_class: Optional[int] = 600,
+    only_sampled: bool = True,
+    exclude_classes: Optional[Union[List[str], Tuple[str, ...]]] = ("Soil Saturation", "Wildlife"),
 ) -> Dict:
-    """Creates a uniform, stratified train/test split across all candidate models."""
-    raw_df = load_raw_dataset(db_path)
-    df = engineer_features(raw_df)
+    """Creates a uniform, stratified train/test split across all candidate models.
+    
+    - exclude_classes: Defaults to ('Soil Saturation', 'Wildlife') to focus purely
+      on the 5 core meteorological hazards (None, Heat, Flood, Lightning, Wildfire).
+    - max_samples_per_class: Caps each category to a similar amount (default 600).
+    - only_sampled: If True, reads from rows marked `is_sampled = 1`.
+    """
+    raw_df = load_raw_dataset(db_path, only_sampled=only_sampled)
+
+    active_classes = list(CORE_METEOROLOGICAL_CLASSES)
+    if exclude_classes:
+        raw_df = raw_df[~raw_df["incident_type"].isin(exclude_classes)].copy()
+        active_classes = [c for c in ALL_CLASSES if c not in exclude_classes]
+
+    active_c2i = {c: i for i, c in enumerate(active_classes)}
+    active_i2c = {i: c for i, c in enumerate(active_classes)}
+
+    if max_samples_per_class is not None:
+        raw_df = sample_balanced_per_category(
+            raw_df,
+            max_samples_per_class=max_samples_per_class,
+            random_state=random_state,
+        )
+
+    df = engineer_features(raw_df, class_to_idx=active_c2i)
 
     X = df[FEATURE_COLS].values
     y_multi = df["target_class"].values
     y_binary = df["target_binary"].values
 
-    # Stratified split using the 5-class target to preserve exact minority proportions
+    # Stratified split preserving exact category proportions
     indices = np.arange(len(df))
     train_idx, test_idx = train_test_split(
         indices,

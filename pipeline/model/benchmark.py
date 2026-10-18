@@ -66,7 +66,7 @@ def run_benchmark():
     models_results = []
 
     print("\n" + "=" * 70)
-    print("BENCHMARKING CANDIDATE ARCHITECTURES (5-Class Hazard Classification)")
+    print(f"BENCHMARKING CANDIDATE ARCHITECTURES ({len(class_names)}-Class Meteorological Hazards)")
     print("=" * 70)
 
     # --------------------------------------------------------------------------
@@ -177,8 +177,16 @@ def run_benchmark():
     else:
         best_preds = y_pred_lr
 
-    target_labels = [IDX_TO_CLASS[i] for i in sorted(IDX_TO_CLASS.keys())]
+    target_labels = class_names
     print(classification_report(y_test, best_preds, target_names=target_labels, zero_division=0))
+
+    import joblib
+    artifact_dir = Path(__file__).resolve().parent / "artifacts"
+    artifact_dir.mkdir(parents=True, exist_ok=True)
+    best_obj = gbdt_model if best_model_name == "Hist Gradient Boosting (GBDT)" else rf_model
+    joblib.dump(best_obj, artifact_dir / "best_hazard_model.joblib")
+    joblib.dump(data["scaler"], artifact_dir / "hazard_scaler.joblib")
+    print(f"\n[ARTIFACT] Saved top model ({best_model_name}) and scaler to {artifact_dir}/")
 
     return res_df
 
