@@ -11,26 +11,18 @@
 
 ## 🎯 Executive Summary
 
-### The Problem
-Electric utility linemen, power plant operators, and field service crews work in high-risk outdoor environments where weather shifts within minutes. In Florida, lightning, dangerous heat index spikes ($>105^\circ\text{F}$), and flash flooding at low-lying substations cause life-threatening risks. Consumer weather apps only report city-wide forecasts hours late with no site-specific geotechnical awareness and no enforcement of **OSHA stop-work safety mandates**.
+### The Reality on the Ground: 6:45 AM in the Everglades
+It is 6:45 AM on a remote transmission corridor cutting through the Florida Everglades. The ambient heat index is already surging toward $110^\circ\text{F}$. Dark convective storm cells are gathering 12 miles to the west over the Gulf. Heavy overnight rainfall has turned the access road into saturated peat and mud, threatening to bog down a 40-ton boom truck. At the same time, crew members are trading hurried text messages about an 8-foot alligator spotted basking near the base of Tower 14.
 
-### The Solution
-**Heron** is an environmental intelligence and worker safety platform monitoring **346 EIA-860M Florida electric power generation and substation sites** across all 67 Florida counties. 
+In high-risk utility operations, danger rarely arrives as a single, isolated event—it arrives as a **compound cascade**. Today, field crews and dispatchers are forced to piece together disjointed information:
+- Consumer weather apps report delayed, city-wide forecasts with zero site-level geotechnical resolution.
+- Critical safety mandates—such as the **10-mile lightning rule**—rely on human guesswork until thunder is audibly heard.
+- Ground realities like flooded access paths, saturated mud, and wildlife threats stay trapped in informal SMS chains rather than reaching control room supervisors.
 
-Heron fuses high-frequency telemetry from orbital weather satellites, ground meteorological networks, and geotechnical hydrological models into a calibrated **Multi-Hazard Machine Learning Model**. The system computes a continuous **0–10 Hazard Index** for every facility in Florida and streams instantaneous, life-saving stop-work directives directly to field crews' iPhones via native SwiftUI and WebSockets.
+### The Heron Platform
+**Heron** transforms utility field safety from reactive guesswork into proactive, real-time environmental intelligence. Built specifically for Florida's volatile climate, Heron continuously monitors **346 EIA-860M electric power generation and substation facilities** across all 67 Florida counties.
 
----
-
-## 📋 Fulfillment of PlanIt Control Requirements
-
-| Challenge Requirement | Specification | Heron Implementation |
-| :--- | :--- | :--- |
-| **1. One Combined Risk Picture Per Site** | *Using at least 50 actual power plant locations, combine weather, extreme heat, lightning, flooding, wildfire, soil saturation, and wildlife sightings into one picture per site.* | **346 Operating Florida Power Plants** (EIA-860M federal registry, ~7x the minimum requirement). Ingests Open-Meteo, ECMWF ERA5-Land soil moisture, FEMA NFHL flood zones, GOES-19 lightning, and crowd-sourced field reports into a unified 6-metric telemetry grid per site. |
-| **2. Instant Dangerous Condition Alerts** | *Warn crews as soon as risk spikes. Lightning within 10 miles triggers stop-work with a 30-minute all-clear countdown that restarts with each new strike. Flooding triggers after heavy rain.* | **Sub-Second Satellite Lightning Tracking**: NOAA GOES-19 GLM orbital detection triggers an automated **10-mile Stop-Work mandate** with a persistent 30-minute all-clear countdown timer (resetting on each strike). **Flood Alerts**: Combines NWS CAP 1.2 alerts and FEMA 100-year Special Flood Hazard Area (SFHA Zone A/AE) saturation rules. |
-| **3. Daily Next-Day Safety Briefing** | *Every evening at 6 PM local time, it sends a next-day safety report.* | **Automated 6 PM Briefing Pipeline**: Generates a forward-looking 24–48h meteorological risk outlook across followed job sites, pushed via iOS `.timeSensitive` notifications and rendered at the top of the **Today** tab. |
-| **4. Crew Hazard Reporting** | *Crew members snap a photo, pin a hazard to the site map, and share instantly to team and project database (Waze-style).* | **In-App Hazard Reporting**: Field linemen capture photos directly from the camera/library, automatically stamp high-accuracy GPS coordinates, select hazard categories (e.g. Wildlife/Gator, Mud/Soil, Debris), and broadcast to the control room and persistent database in real time. |
-| **5. Supervisor PlanIt Dashboard** | *A map that ranks sites by risk, showing supervisors where to focus attention and resources first.* | **Statewide Risk Matrix & Map**: Interactive MapKit map pinning all 346 power facilities across Florida, featuring a bottom-docked **"Risk Near You"** strip ranking sites from highest to lowest Hazard Index, with rapid filters for Lightning, Flood, Heat, and Wildfire. |
-| **6. Machine Learning Hazard Index (0–10)** | *A machine learning (ML) model trained on historical weather and environmental data tied to hazards on-site workers face.* | **Calibrated Multi-Hazard Model**: Gradient Boosted Decision Tree (HistGradientBoosting) trained on **47,150 historical records** (OSHA Severe Injury Reports, NOAA Storm Events, NIFC Wildfires, FEMA floodplains), achieving **94.5% test accuracy (0.945 Macro F1)** across 28 physical features and outputting a calibrated 0–10 hazard score. |
+By fusing high-frequency orbital weather satellites, ground meteorological networks, hydrological flood models, and live field reports into a calibrated **Multi-Hazard Machine Learning Model**, Heron computes a continuous, site-specific **0–10 Hazard Index**. When conditions deteriorate, Heron executes automated stop-work directives—including an active 30-minute lightning countdown timer—streamed directly to field crews' iPhones via native SwiftUI and WebSockets.
 
 ---
 
@@ -40,25 +32,48 @@ Heron fuses high-frequency telemetry from orbital weather satellites, ground met
   <img src="assets/architecture.svg" alt="Heron High-Level Architecture Pipeline" width="100%" />
 </p>
 
+Heron decouples complex environmental data ingestion from edge mobile consumption through four resilient tiers:
+1. **Environmental Ingestion**: Paced asynchronous pollers ingest live atmospheric, orbital lightning (NOAA GOES-19 GLM), and FEMA hydrological data.
+2. **Unified Feature Transformation & ML Scoring**: Telemetry is mapped into a standardized 28-feature vector and evaluated by a Gradient Boosted Decision Tree (GBDT) running in $<2\text{ ms}$, bounded by deterministic OSHA safety guardrails.
+3. **Event Streaming & State Management**: An at-least-once message bus broadcasts state updates, sequenced hazard batches, and stop-work events over low-latency WebSockets.
+4. **Field Edge & Supervisor Client**: A native iOS application built with SwiftUI and MapKit delivers instant alerts, interactive risk mapping, offline fallback caches, and two-way field hazard reporting.
+
 ---
 
 ## ⚡ Core Capabilities
 
-- **346 Monitored Energy Plants**: Official EIA-860M Florida registry (from Turkey Point Nuclear to municipal solar yards and battery storage).
-- **Sub-Second Satellite Lightning Detection**: Ingests real-time lightning flashes from NOAA's **GOES-19 Geostationary Lightning Mapper (GLM)** stationed 22,236 miles in orbit.
-- **Calibrated 0–10 Hazard Index**: Combines gradient-boosted multi-hazard classification with physical plausibility gates to eliminate false alarms while guaranteeing safety.
-- **Physical Soil Saturation**: Uses ECMWF ERA5-Land physical soil water content weighted across 3 distinct sub-surface root layers against a $0.45\text{ m}^3/\text{m}^3$ porosity threshold.
-- **Deterministic OSHA Safety Mandates**:
-  - ⚡ **10-Mile Lightning Rule**: Work stops immediately when a strike occurs within 10 miles. Starts an automated 30-minute all-clear timer that resets on subsequent strikes.
-  - 🔥 **Extreme Heat Protocol**: Mandatory 15-min rest at $\ge 105^\circ\text{F}$; full work stoppage at $\ge 115^\circ\text{F}$.
-  - 🌊 **FEMA 100-Year Inundation**: $\ge 25\text{ mm}$ rain inside a regulatory floodway triggers a site Flood Warning.
-- **Field Crew Hazard Reporting**: Linemen can capture hazard photos, automatically attach verified GPS coordinates, and sync reports with dispatch in real time.
+### 1. Unified Multi-Hazard Operational Picture (346 Monitored Facilities)
+Heron monitors **346 operating electric power plants and substations** across Florida (sourced from the official U.S. Energy Information Administration EIA-860M registry)—from Turkey Point Nuclear and West County Energy Center to municipal solar arrays and battery storage sites. For every site, Heron synthesizes six concurrent data dimensions into a single operational picture:
+- **Atmospheric Conditions**: Real-time ambient temperature, humidity, wind gusts, and barometric pressure.
+- **Extreme Heat Index**: Apparent temperature calculations factoring high humidity and direct solar radiation.
+- **Orbital Lightning Tracking**: Real-time flash coordinates captured by NOAA's GOES-19 Geostationary Lightning Mapper (GLM).
+- **Hydrological & Flood Risks**: Live rainfall totals cross-referenced with statutory FEMA 100-year Special Flood Hazard Area (SFHA Zone A/AE) boundaries.
+- **Geotechnical Soil Saturation**: Multi-layer root zone soil moisture from ECMWF ERA5-Land physics models evaluated against a $0.45\text{ m}^3/\text{m}^3$ porosity threshold to flag equipment bogging risks.
+- **Wildlife & Ground Observations**: Verified crowd-sourced reports of gators, downed trees, and roadway washouts.
+
+### 2. Instant Dangerous Condition Alerts & OSHA Guardrails
+When site conditions cross hazardous thresholds, Heron immediately issues prioritized, color-coded directives (`Advisory`, `Warning`, or `Stop-Work`):
+- ⚡ **10-Mile Lightning Rule**: Detection of an orbital flash within 10 miles of any job site instantly triggers a mandatory **Stop-Work directive**. The system initiates a synchronized **30-minute all-clear countdown timer** that automatically resets to 30:00 with every subsequent strike inside the 10-mile radius.
+- 🔥 **OSHA Extreme Heat Protocol**: Apparent temperatures $\ge 105^\circ\text{F}$ enforce mandatory 15-minute hydration rests; conditions $\ge 115^\circ\text{F}$ trigger mandatory work cessation.
+- 🌊 **Flash Flooding & Heavy Inundation**: Sustained rainfall $\ge 25\text{ mm}$ within designated FEMA floodways instantly alerts crews to substation pooling and sub-surface trench collapses.
+
+### 3. Automated 6:00 PM Next-Day Safety Briefings
+Every evening at **6:00 PM local time**, Heron's automated briefing pipeline analyzes the forward-looking 24- to 48-hour meteorological outlook for every followed site. The resulting briefing is dispatched via iOS `.timeSensitive` push notifications and pinned directly to the mobile app's **Today** view, arming supervisors with projected peak heat hours, storm probabilities, and required PPE before morning tailboard meetings.
+
+### 4. Waze-Style Crew Hazard Reporting
+Field linemen can report on-site dangers in seconds. Tapping **Report Hazard** opens the native camera or photo library, automatically attaches high-precision GPS coordinates, and allows the worker to categorize the hazard (e.g., *Wildlife / Gator*, *Mud & Soil Saturation*, *Downed Utility Poles*, *Debris*). Once submitted, the report synchronizes with the central database and broadcasts instantly to nearby crews and the supervisor's live map.
+
+### 5. Supervisor PlanIt Risk Dashboard
+Designed for dispatchers and safety supervisors, the interactive MapKit interface visualizes the entire state of Florida with custom hazard pins. A docked **"Risk Near You"** carousel automatically sorts and ranks facilities from highest to lowest Hazard Index, enabling operations leaders to triage emergency personnel, delay high-voltage switching, and pre-position recovery equipment where risks are greatest.
+
+### 6. Calibrated Machine Learning Hazard Index (0–10)
+At the core of Heron is a calibrated classification engine trained on **47,150 historical records** (spanning OSHA Severe Injury Reports, NOAA Storm Events, NIFC Wildfires, and FEMA floodplains). Evaluating **28 physical features**, Heron's Gradient Boosted Decision Tree (GBDT) achieves a **94.5% test accuracy (0.945 Macro F1)** across 5 distinct hazard classes (`Safe Control`, `Extreme Heat`, `Flood`, `Lightning`, and `Wildfire`), delivering an explainable, continuous 0–10 risk score with $<2\text{ ms}$ inference latency.
 
 ---
 
 ## 📖 In-Depth Technical Documentation
 
-For deep technical details, model evaluation benchmarks, and architectural designs, explore our specialized sub-module documentation:
+For deep technical specifications, model benchmarks, and architectural designs, explore our specialized sub-module documentation:
 
 | Sub-Module | Focus & Technical Depth | Documentation Link |
 | :--- | :--- | :---: |
