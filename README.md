@@ -7,16 +7,6 @@
   <b>Real-Time Environmental Intelligence & Worker Safety Platform for Florida Utility Field Crews</b>
 </p>
 
-<p align="center">
-  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white" alt="Python 3.12" /></a>
-  <a href="https://fastapi.tiangolo.com"><img src="https://img.shields.io/badge/FastAPI-0.115-009688?style=flat&logo=fastapi&logoColor=white" alt="FastAPI" /></a>
-  <a href="https://developer.apple.com/xcode/swiftui/"><img src="https://img.shields.io/badge/SwiftUI-iOS_17%2B-FA7343?style=flat&logo=swift&logoColor=white" alt="SwiftUI" /></a>
-  <a href="https://scikit-learn.org"><img src="https://img.shields.io/badge/Scikit--Learn-1.5-F7931E?style=flat&logo=scikit-learn&logoColor=white" alt="Scikit-Learn" /></a>
-  <a href="https://www.goes-r.gov"><img src="https://img.shields.io/badge/Satellite-NOAA_GOES--19_GLM-003366?style=flat" alt="NOAA GOES-19" /></a>
-  <a href="https://hazards.fema.gov"><img src="https://img.shields.io/badge/GIS-FEMA_NFHL_Layer_28-1B365D?style=flat" alt="FEMA NFHL" /></a>
-  <img src="https://img.shields.io/badge/Tests-28%2F28_Passed-success?style=flat" alt="Tests Passing" />
-</p>
-
 > **SwampHacks 2026 Submission**  
 > **Target Tracks:**  
 > 1. **Sperry Tech — PlanIt Control Track** (Utility Field Crew Safety & Dispatch)  
