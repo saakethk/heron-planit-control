@@ -22,7 +22,13 @@ from sklearn.ensemble import HistGradientBoostingClassifier, RandomForestClassif
 from sklearn.metrics import classification_report, f1_score, roc_auc_score
 from sklearn.model_selection import train_test_split
 
-from pipeline.model.dataset import FEATURE_COLS, CLASS_NAMES, CLASS_TO_IDX
+try:
+    from backend.pipeline.model.dataset import FEATURE_COLS, CLASS_NAMES, CLASS_TO_IDX
+except ModuleNotFoundError:
+    try:
+        from pipeline.model.dataset import FEATURE_COLS, CLASS_NAMES, CLASS_TO_IDX
+    except ModuleNotFoundError:
+        from dataset import FEATURE_COLS, CLASS_NAMES, CLASS_TO_IDX
 
 DB_PATH = Path(__file__).resolve().parent.parent / "data" / "incidents.db"
 MODEL_DIR = Path(__file__).resolve().parent / "artifacts"

@@ -15,11 +15,19 @@ import pandas as pd
 from sklearn.metrics import confusion_matrix, roc_curve, auc, classification_report
 import joblib
 
-from pipeline.model.dataset import get_stratified_dataset, FEATURE_COLS, CLASS_NAMES
+try:
+    from backend.pipeline.model.dataset import get_stratified_dataset, FEATURE_COLS, CLASS_NAMES
+except ModuleNotFoundError:
+    try:
+        from pipeline.model.dataset import get_stratified_dataset, FEATURE_COLS, CLASS_NAMES
+    except ModuleNotFoundError:
+        from dataset import get_stratified_dataset, FEATURE_COLS, CLASS_NAMES
 
-DB_PATH = Path("pipeline/data/incidents.db")
-ARTIFACTS_DIR = Path("pipeline/model/artifacts")
+BASE_DIR = Path(__file__).resolve().parent.parent
+DB_PATH = BASE_DIR / "data" / "incidents.db"
+ARTIFACTS_DIR = Path(__file__).resolve().parent / "artifacts"
 MODEL_PATH = ARTIFACTS_DIR / "best_hazard_model.joblib"
+ASSETS_DIR = BASE_DIR.parent.parent / "assets"
 
 
 def generate_roc_curves_svg(fpr_dict, tpr_dict, roc_auc_dict, out_path: Path):
@@ -183,6 +191,9 @@ def run_evaluation_and_generate_artifacts():
     cm_path = ARTIFACTS_DIR / "confusion_matrix.svg"
     generate_confusion_matrix_svg(cm, class_names, cm_path)
     print(f"[ARTIFACT] Saved Confusion Matrix to {cm_path}")
+    if ASSETS_DIR.exists():
+        import shutil
+        shutil.copy(cm_path, ASSETS_DIR / "confusion_matrix.svg")
 
     # 2. Multi-Class ROC Curves
     fpr_dict = {}
@@ -198,6 +209,9 @@ def run_evaluation_and_generate_artifacts():
     roc_path = ARTIFACTS_DIR / "roc_curves.svg"
     generate_roc_curves_svg(fpr_dict, tpr_dict, auc_dict, roc_path)
     print(f"[ARTIFACT] Saved ROC Curves to {roc_path}")
+    if ASSETS_DIR.exists():
+        import shutil
+        shutil.copy(roc_path, ASSETS_DIR / "roc_curves.svg")
 
     # 3. Feature Importances
     if hasattr(model, "feature_importances_"):
@@ -205,6 +219,9 @@ def run_evaluation_and_generate_artifacts():
         fi_path = ARTIFACTS_DIR / "feature_importance.svg"
         generate_feature_importance_svg(importances, FEATURE_COLS, fi_path)
         print(f"[ARTIFACT] Saved Feature Importance plot to {fi_path}")
+        if ASSETS_DIR.exists():
+            import shutil
+            shutil.copy(fi_path, ASSETS_DIR / "feature_importance.svg")
 
     # Print Summary Report
     print("\n" + "=" * 70)
