@@ -16,11 +16,11 @@ struct DashboardView: View {
 
                     if let site = store.homeSite {
                         lightningSection(site)
+                        briefingSection
                         indexCard(site)
                         if let conditions = site.conditions {
                             SiteWeatherCard(site: site, conditions: conditions)
                         }
-                        briefingSection
                         driversCard(site)
                     } else if store.isLoading {
                         ProgressView().frame(maxWidth: .infinity).padding(.top, 80)
