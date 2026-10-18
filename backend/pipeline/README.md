@@ -154,7 +154,7 @@ When $T_{\text{apparent}} \ge 105^\circ\text{F}$, thermal dissipation through pe
 
 #### 2. Multi-Layer Soil Water Saturation Physics
 Florida soils primarily consist of sandy loam, flatwood spodosols, and saturated Everglades peat. Heron models volumetric soil moisture $\theta$ ($\text{m}^3/\text{m}^3$) across three distinct subsurface depth zones from ECMWF ERA5-Land:
-$$\bar{\theta} = 0.20 \cdot \theta_{0\text{--}7\text{cm}} + 0.35 \cdot \theta_{7\text{--}28\text{cm}} + 0.45 \cdot \theta_{28\text{--}100\text{cm}}$$
+$$\bar{\theta} = 0.20 \cdot \theta_{\text{0-7cm}} + 0.35 \cdot \theta_{\text{7-28cm}} + 0.45 \cdot \theta_{\text{28-100cm}}$$
 When $\bar{\theta} \ge 0.45\text{ m}^3/\text{m}^3$, the root zone reaches full porosity saturation, signaling immediate vehicle entrapment risks for 40-ton utility boom trucks.
 
 #### 3. Cyclical Temporal Harmonics
@@ -164,8 +164,8 @@ This enables the tree-based model to learn smooth seasonal transitions between F
 
 #### 4. Compound FEMA Regulatory Flood Interaction
 A low-lying facility located in a FEMA 100-year Special Flood Hazard Area (`Zone AE`, base risk score $0.85$) is safe under dry conditions. However, when combined with rainfall, risk scales non-linearly:
-$$\text{Compound Flood Risk} = \text{fema\_flood\_risk\_score} \times \text{precipitation\_sum}$$
-This interaction term serves as one of the top 3 most predictive split parameters in the decision tree.
+$$\text{Compound Flood Risk} = \text{FEMA Flood Risk Score} \times \text{Precipitation Sum}$$
+In the feature vector, this is computed as `fema_flood_precip_compound = fema_flood_risk_score * precipitation_sum`. This interaction term serves as one of the top 3 most predictive split parameters in the decision tree.
 
 ---
 
