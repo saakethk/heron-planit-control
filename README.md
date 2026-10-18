@@ -28,14 +28,9 @@ Heron fuses high-frequency telemetry from orbital weather satellites, ground met
 
 ## 🏗 High-Level Architecture
 
-```mermaid
-flowchart LR
-    A["📡 Environmental & Satellite<br/>Data Sources"] --> B["⚙️ Ingestion & Feature<br/>Processing Pipeline"]
-    B --> C["🧠 Multi-Hazard ML Model &<br/>OSHA Safety Guardrails"]
-    C --> D["⚡ Real-Time Streaming<br/>& API Gateway"]
-    D --> E["📱 Field Linemen<br/>Mobile App"]
-    D --> F["🗺️ Supervisor PlanIt<br/>Control Room"]
-```
+<p align="center">
+  <img src="assets/architecture.svg" alt="Heron High-Level Architecture Pipeline" width="100%" />
+</p>
 
 ---
 
