@@ -121,7 +121,7 @@ struct SitesView: View {
             let holds = store.activeHolds().compactMap { store.site(id: $0.siteId) }
             ZStack(alignment: .bottom) {
                 map(listing, holdSites: holds)
-                    .ignoresSafeArea(edges: .top)
+                    .ignoresSafeArea()
                 VStack(spacing: 8) {
                     Spacer(minLength: 0)
                     mapFooter(showsRadius: !holds.isEmpty)
@@ -131,10 +131,9 @@ struct SitesView: View {
                             panelHeight(for: height)
                         }
                 }
+                .ignoresSafeArea(edges: .bottom)
             }
             .safeAreaInset(edge: .top, spacing: 8) { topControls }
-            .safeAreaPadding(.bottom)
-            .padding(.bottom, Self.floatingTabClearance)
             .animation(.spring(duration: 0.32), value: panelExpanded)
             .background(Palette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
@@ -160,10 +159,10 @@ struct SitesView: View {
         if #available(iOS 26, *) { 52 } else { 0 }
     }
 
-    /// Collapsed: a short "Risk near you" strip above the tab bar.
-    /// Expanded: about half the screen, still clear of the tab bar.
+    /// Collapsed: a compact "Risk near you" card docked to the bottom.
+    /// Expanded: about half the screen, with full list browsing.
     private func panelHeight(for available: CGFloat) -> CGFloat {
-        panelExpanded ? min(available * 0.46, 480) : min(max(available * 0.24, 172), 208)
+        panelExpanded ? min(available * 0.54, 520) : min(max(available * 0.28, 210), 240)
     }
 
     // MARK: Map
@@ -231,6 +230,8 @@ struct SitesView: View {
                 .buttonStyle(.plain)
                 .accessibilityLabel(satellite ? "Standard map" : "Satellite map")
             }
+            .padding(.horizontal, 14)
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     LocationChip()
@@ -241,9 +242,9 @@ struct SitesView: View {
                         }
                     }
                 }
+                .padding(.horizontal, 14)
             }
         }
-        .padding(.horizontal, 14)
         .padding(.bottom, 4)
     }
 
@@ -297,10 +298,25 @@ struct SitesView: View {
                             ProgressView()
                                 .padding(.top, 28)
                         } else {
-                            Text(store.sites.isEmpty ? "Sites will appear here." : "No sites match.")
-                                .font(.subheadline)
-                                .foregroundStyle(Palette.secondaryText)
-                                .padding(.top, 24)
+                            VStack(spacing: 8) {
+                                Text(store.sites.isEmpty ? "No sites loaded" : "No sites match.")
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundStyle(Palette.secondaryText)
+                                if let error = store.loadError {
+                                    Text(error)
+                                        .font(.caption)
+                                        .foregroundStyle(Palette.tertiaryText)
+                                        .multilineTextAlignment(.center)
+                                        .padding(.horizontal, 20)
+                                    Button("Retry Connection") {
+                                        Task { await store.refresh() }
+                                    }
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(Palette.accent)
+                                    .padding(.top, 4)
+                                }
+                            }
+                            .padding(.top, 24)
                         }
                     }
                     siteRows(listing.primary, rankOffset: 0)
@@ -308,7 +324,7 @@ struct SitesView: View {
                         moreSites(listing.bands, rankOffset: listing.primary.count)
                     }
                 }
-                .padding(.bottom, 10)
+                .padding(.bottom, Self.floatingTabClearance + 24)
                 .animation(.default, value: listing.primary.map(\.id))
             }
             .scrollBounceBehavior(.basedOnSize)

@@ -160,25 +160,6 @@ struct SiteDetailView: View {
                     }
                     .buttonStyle(.plain)
                 }
-
-                Button {
-                    store.simulateLightningStrike(siteId: site.id)
-                } label: {
-                    HStack(spacing: 8) {
-                        Image(systemName: "bolt.fill")
-                        Text("Simulate Lightning (Stop Work)")
-                    }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(Palette.stopWork)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-                    .background(Palette.stopWork.opacity(0.12), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 15, style: .continuous)
-                            .stroke(Palette.stopWork.opacity(0.3), lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
             }
             .padding(.top, 4)
 

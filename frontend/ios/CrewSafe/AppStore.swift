@@ -147,7 +147,17 @@ final class AppStore {
             lastUpdated = .now
             loadError = nil
         } catch {
-            loadError = "Couldn't reach the hazard service. Showing the last data received."
+            loadError = "Couldn't reach the hazard service. Showing offline data."
+            if sites.isEmpty {
+                setSites(MockData.sites)
+                alerts = MockData.alerts
+                for hold in MockData.activeHolds {
+                    lightningHolds[hold.siteId] = hold
+                }
+                nextDayBriefing = MockData.briefing
+                reports = MockData.reports
+                lastUpdated = .now
+            }
         }
         await loadBriefing(siteId: homeSiteId)
     }
