@@ -1,0 +1,11 @@
+{
+  "Simulator Target Bundle": "com.swamphacks.crewsafe",
+  "aps": {
+    "alert": {
+      "title": "Tomorrow's safety briefing",
+      "body": "Hot and stormy statewide. Port Everglades 8.2, Bayboro 6.5, Orlando Cogen 6.1. Plan outdoor work before 1 PM."
+    },
+    "sound": "default",
+    "category": "DAILY_BRIEFING"
+  }
+}

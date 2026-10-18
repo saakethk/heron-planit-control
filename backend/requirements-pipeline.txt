@@ -1,0 +1,8 @@
+# Optional: Kafka between services (PIPELINE_MODE=kafka) and Postgres storage (STORAGE=postgres)
+-r requirements.txt
+aiokafka>=0.11
+psycopg[binary,pool]>=3.2
+
+# Real model, once trained (see crewsafe/processing/scoring/model.py)
+# lightgbm>=4.3
+# scikit-learn>=1.5
