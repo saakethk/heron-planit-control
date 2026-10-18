@@ -12,7 +12,12 @@ router = APIRouter(tags=["health"])
 @router.get("/health", response_model=Health)
 async def health(p: Pipeline = Depends(get_pipeline)) -> Health:
     scores = await p.repo.latest_scores()
+    conditions = await p.repo.all_latest_conditions()
+    s = p.settings
     return Health(
+        data_sources={"weather": s.weather_source, "alerts": s.alert_source, "lightning": s.lightning_source},
+        last_weather_at=max((c.obs_time for c in conditions.values()), default=None),
+        stale_sites=sum(c.data_stale for c in conditions.values()),
         status="ok",
         pipeline_mode=p.settings.pipeline_mode,
         storage=p.settings.storage,

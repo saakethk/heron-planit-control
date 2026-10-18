@@ -29,13 +29,16 @@ class RawNwsAlert(Contract):
     onset: UtcDatetime | None = None
     expires: UtcDatetime | None = None
     # Sites the source already knows are affected (dummy source), or a GeoJSON
-    # polygon the transformer matches against site coordinates (real NWS).
+    # polygon the transformer matches against site coordinates (real NWS). Most
+    # NWS alerts have no polygon, only county SAME codes ("012001" = FL Alachua).
     site_ids: list[int] = Field(default_factory=list)
     geometry: dict[str, Any] | None = None
+    same_codes: list[str] = Field(default_factory=list)
 
 
 class RawLightningStrike(Contract):
-    """raw.lightning: a single cloud-to-ground strike."""
+    """raw.lightning: one lightning flash (GOES GLM detects cloud-to-ground and
+    in-cloud flashes; both count for the stop-work rule)."""
     strike_id: str
     latitude: float
     longitude: float
@@ -51,6 +54,8 @@ class Forecast(Contract):
     precip_probability: float
     max_cape: float
     max_wind_gust_mph: float
+    # Tomorrow's daily aggregates in the trained model's units (see features.MODEL_WEATHER_COLUMNS).
+    model_inputs: dict[str, float] | None = None
 
 
 class CleanConditions(Contract):
@@ -69,12 +74,17 @@ class CleanConditions(Contract):
     rain_7d_in: float
     cape: float
     soil_moisture_pct: float
-    drought_index: float
+    # Keetch-Byram drought index; no free live feed, so only the dummy world sets it.
+    drought_index: float | None = None
     river_stage_ft_above_flood: float | None = None
     tide_ft_above_mhhw: float | None = None
     nearest_strike_miles: float | None = None
+    # WMO code for current weather; 95/96/99 = thunderstorm.
+    weather_code: int | None = None
     data_stale: bool = False
     forecast: Forecast | None = None
+    # Today's daily aggregates in the trained model's units (see features.MODEL_WEATHER_COLUMNS).
+    model_inputs: dict[str, float] | None = None
 
 
 class SiteNwsAlert(Contract):

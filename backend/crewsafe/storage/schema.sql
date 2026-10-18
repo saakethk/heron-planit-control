@@ -8,6 +8,10 @@ CREATE TABLE IF NOT EXISTS sites (
     latitude         DOUBLE PRECISION NOT NULL,
     longitude        DOUBLE PRECISION NOT NULL,
     capacity_mw      DOUBLE PRECISION NOT NULL,
+    flood_zone       TEXT,                         -- FEMA NFHL zone (A, AE, VE, X...)
+    fema_sfha        BOOLEAN NOT NULL DEFAULT FALSE,
+    fema_coastal     BOOLEAN NOT NULL DEFAULT FALSE,
+    fema_score       DOUBLE PRECISION NOT NULL DEFAULT 0.05,
     coastal          BOOLEAN NOT NULL DEFAULT FALSE,
     near_river       BOOLEAN NOT NULL DEFAULT FALSE,
     elevation_ft     DOUBLE PRECISION NOT NULL DEFAULT 30,

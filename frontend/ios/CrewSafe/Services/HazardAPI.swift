@@ -15,6 +15,24 @@ protocol HazardAPI: Sendable {
     func registerDevice(apnsToken: String) async throws
     /// Tells the backend which sites this user follows, so pushes target only nearby crews.
     func updateSubscription(_ subscription: SiteSubscription) async throws
+    /// Inject a scripted event into the live pipeline (lightning, heat, flood, clear).
+    func simulate(kind: String, siteId: Int?, miles: Double?) async throws -> SimulateResult
+}
+
+struct SimulateRequest: Codable, Sendable {
+    var kind: String
+    var siteId: Int?
+    var miles: Double?
+}
+
+struct SimulateResult: Codable, Hashable, Sendable {
+    var kind: String
+    var siteId: Int?
+    var detail: String
+    var hazardIndex: Double?
+    var heatIndexF: Double?
+    var rain24hIn: Double?
+    var activeHold: Bool
 }
 
 struct SiteSubscription: Codable, Hashable, Sendable {
@@ -68,6 +86,11 @@ struct MockHazardAPI: HazardAPI {
     func registerDevice(apnsToken: String) async throws {}
 
     func updateSubscription(_ subscription: SiteSubscription) async throws {}
+
+    func simulate(kind: String, siteId: Int?, miles: Double?) async throws -> SimulateResult {
+        SimulateResult(kind: kind, siteId: siteId, detail: "Applied locally.",
+                       hazardIndex: nil, heatIndexF: nil, rain24hIn: nil, activeHold: kind == "lightning")
+    }
 }
 
 struct LiveHazardAPI: HazardAPI {
@@ -101,10 +124,24 @@ struct LiveHazardAPI: HazardAPI {
         try await send("me/subscription", body: subscription, method: "PUT")
     }
 
+    func simulate(kind: String, siteId: Int?, miles: Double?) async throws -> SimulateResult {
+        try await post("simulate", body: SimulateRequest(kind: kind, siteId: siteId, miles: miles))
+    }
+
     private func get<T: Decodable>(_ path: String, query: [URLQueryItem] = []) async throws -> T {
         var url = baseURL.appending(path: path)
         if !query.isEmpty { url.append(queryItems: query) }
         let (data, response) = try await session.data(from: url)
+        try validate(response)
+        return try JSONCoding.decoder.decode(T.self, from: data)
+    }
+
+    private func post<Body: Encodable, T: Decodable>(_ path: String, body: Body) async throws -> T {
+        var request = URLRequest(url: baseURL.appending(path: path))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONCoding.encoder.encode(body)
+        let (data, response) = try await session.data(for: request)
         try validate(response)
         return try JSONCoding.decoder.decode(T.self, from: data)
     }

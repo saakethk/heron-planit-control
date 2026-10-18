@@ -14,8 +14,8 @@ class WeatherSource(Protocol):
     name: str
 
     async def fetch(self, sites: list[SiteRecord], at: datetime | None = None) -> list[RawObservation]:
-        """Current conditions for every site. `at` is only honored by the dummy
-        source (used to backfill history)."""
+        """Current conditions for every site. `at` (a past time) is used to
+        backfill history at startup."""
 
 
 class AlertSource(Protocol):
@@ -25,8 +25,8 @@ class AlertSource(Protocol):
 
 
 class LightningSource(Protocol):
-    """Real-time strike feeds are commercial (Vaisala GLD360, Earth Networks,
-    Xweather). Implement `fetch` against whichever feed is licensed."""
+    """`GlmLightningSource` reads NOAA's free GOES GLM flashes. Commercial
+    strike feeds (Vaisala GLD360, Earth Networks, Xweather) plug in the same way."""
     name: str
 
     async def fetch(self) -> list[RawLightningStrike]: ...

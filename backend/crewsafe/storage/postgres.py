@@ -13,7 +13,8 @@ from ..contracts.api import HazardAlert, IndexPoint, LightningHold, SiteSubscrip
 from ..contracts.events import CleanConditions, HazardScore
 from .models import Decision, DeviceRecord, SiteRecord, StoredReport, UserRecord
 
-SITE_COLUMNS = "id, name, county, latitude, longitude, capacity_mw, coastal, near_river, elevation_ft, wildlife_habitat"
+SITE_COLUMNS = ("id, name, county, latitude, longitude, capacity_mw, flood_zone, fema_sfha, fema_coastal, fema_score, "
+                "coastal, near_river, elevation_ft, wildlife_habitat")
 
 
 class PostgresRepository:
@@ -54,14 +55,12 @@ class PostgresRepository:
     async def upsert_sites(self, sites: list[SiteRecord]) -> None:
         async with self._pool.connection() as conn:
             async with conn.cursor() as cur:
+                columns = SITE_COLUMNS.split(", ")
                 await cur.executemany(
-                    f"INSERT INTO sites ({SITE_COLUMNS}) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s) "
-                    "ON CONFLICT (id) DO UPDATE SET name=EXCLUDED.name, county=EXCLUDED.county, "
-                    "latitude=EXCLUDED.latitude, longitude=EXCLUDED.longitude, capacity_mw=EXCLUDED.capacity_mw, "
-                    "coastal=EXCLUDED.coastal, near_river=EXCLUDED.near_river, elevation_ft=EXCLUDED.elevation_ft, "
-                    "wildlife_habitat=EXCLUDED.wildlife_habitat",
-                    [(s.id, s.name, s.county, s.latitude, s.longitude, s.capacity_mw, s.coastal, s.near_river,
-                      s.elevation_ft, s.wildlife_habitat) for s in sites])
+                    f"INSERT INTO sites ({SITE_COLUMNS}) VALUES ({','.join(['%s'] * len(columns))}) "
+                    "ON CONFLICT (id) DO UPDATE SET "
+                    + ", ".join(f"{c}=EXCLUDED.{c}" for c in columns if c != "id"),
+                    [tuple(getattr(s, c) for c in columns) for s in sites])
 
     async def list_sites(self) -> list[SiteRecord]:
         return [SiteRecord(**r) for r in await self._all(f"SELECT {SITE_COLUMNS} FROM sites ORDER BY id")]

@@ -106,7 +106,7 @@ struct LocationPickerView: View {
                 .font(.largeTitle)
                 .foregroundStyle(Palette.accent)
             Text("Where are your crews working?").font(.title2.weight(.bold))
-            Text("CrewSafe lists the \(AppStore.nearbyCount) sites closest to you and makes the nearest one your home site. Farther sites are one tap away, and you can change this anytime.")
+            Text("Heron lists the \(AppStore.nearbyCount) sites closest to you and makes the nearest one your home site. Farther sites are one tap away, and you can change this anytime.")
                 .font(.subheadline)
                 .foregroundStyle(Palette.secondaryText)
         }
@@ -174,7 +174,7 @@ struct LocationChip: View {
         Button { showPicker = true } label: {
             HStack(spacing: 5) {
                 Image(systemName: "location.fill").font(.caption2)
-                Text("Near \(store.searchLocation.name)").lineLimit(1)
+                Text(store.searchLocation.name).lineLimit(1)
                 Image(systemName: "chevron.down").font(.caption2.weight(.bold))
             }
             .font(.footnote.weight(.semibold))

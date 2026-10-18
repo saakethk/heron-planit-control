@@ -2,8 +2,10 @@
 
     uvicorn crewsafe.api.main:app --reload --host 0.0.0.0 --port 8000
 
-In local mode (default) this one process also runs the whole pipeline on dummy
-data. In Kafka mode it only serves the API and forwards pipeline events.
+In local mode (default, DATA_SOURCE=real) this one process also runs the whole
+pipeline: Open-Meteo weather, NWS alerts, GOES GLM lightning, and the pipeline's
+trained hazard model. Set DATA_SOURCE=dummy for the offline simulated world.
+In Kafka mode it only serves the API and forwards pipeline events.
 """
 
 from __future__ import annotations

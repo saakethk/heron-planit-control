@@ -6,7 +6,6 @@ struct AlertsView: View {
         case unread = "Unread"
         case stopWork = "Stop work"
         case mySite = "My site"
-        case crew = "Crew reports"
     }
 
     @Environment(AppStore.self) private var store
@@ -18,7 +17,6 @@ struct AlertsView: View {
         case .unread: !store.isAcknowledged(alert)
         case .stopWork: alert.severity == .stopWork
         case .mySite: alert.siteId == store.homeSiteId
-        case .crew: alert.source == "Crew report"
         }
     }
 
@@ -71,7 +69,7 @@ struct AlertsView: View {
     private var header: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack(alignment: .firstTextBaseline) {
-                Text("Alerts").font(.largeTitle.weight(.bold))
+                Text("Alerts").font(.title.weight(.bold))
                 Spacer()
                 Button("Mark all read") { store.acknowledgeAll() }
                     .font(.subheadline.weight(.semibold))

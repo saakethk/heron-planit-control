@@ -41,7 +41,7 @@ def site_view(record: SiteRecord, score: HazardScore | None, conditions: CleanCo
     site = Site(
         id=record.id, name=record.name, county=record.county, latitude=record.latitude,
         longitude=record.longitude, capacity_mw=record.capacity_mw, hazard_index=index,
-        factors=score.factors if score else [],
+        factors=score.factors if score else [], flood_zone=record.flood_zone,
         updated_at=score.computed_at if score else utcnow(),
         risk_level=RiskLevel.from_index(index).value,
         model_version=score.model_version if score else None,

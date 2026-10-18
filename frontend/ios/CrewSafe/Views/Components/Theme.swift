@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// Dark-first palette from `frontend/design/crewsafe-mockup.svg`: high contrast for outdoor use.
+/// Dark marsh palette for Heron: teal accent, high contrast for outdoor use.
 enum Palette {
-    static let background = Color(red: 0.035, green: 0.047, blue: 0.075)
-    static let card = Color(red: 0.086, green: 0.102, blue: 0.141)
-    static let raised = Color(red: 0.125, green: 0.145, blue: 0.192)
+    static let background = Color(red: 0.035, green: 0.055, blue: 0.062)
+    static let card = Color(red: 0.075, green: 0.110, blue: 0.122)
+    static let raised = Color(red: 0.110, green: 0.155, blue: 0.168)
     static let stroke = Color.white.opacity(0.07)
     static let secondaryText = Color.white.opacity(0.62)
     static let tertiaryText = Color.white.opacity(0.42)
-    static let accent = Color(red: 0.25, green: 0.56, blue: 1.0)
-    static let live = Color(red: 0.2, green: 0.84, blue: 0.4)
+    static let accent = Color(red: 0.22, green: 0.62, blue: 0.62)
+    static let live = Color(red: 0.35, green: 0.82, blue: 0.58)
     static let stopWork = Color(red: 0.96, green: 0.27, blue: 0.27)
 }
 
@@ -67,12 +67,12 @@ extension ConnectionStatus {
 }
 
 extension View {
-    func card(padding: CGFloat = 16) -> some View {
+    func card(padding: CGFloat = 14) -> some View {
         self
             .padding(padding)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Palette.card, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(Palette.stroke))
+            .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Palette.stroke))
     }
 
     /// Caps line length on wide screens (iPhone Duo unfolded, iPad).

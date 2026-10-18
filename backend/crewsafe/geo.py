@@ -43,6 +43,30 @@ def offset(lat: float, lon: float, miles: float, bearing: float) -> tuple[float,
 
 COMPASS_BEARING = {name: i * 45.0 for i, name in enumerate(COMPASS)}
 
+# Florida county FIPS codes (state 12). NWS alerts list affected counties as SAME
+# codes: "0" + state + county, e.g. "012001" for Alachua.
+FL_COUNTY_FIPS = {
+    "alachua": "001", "baker": "003", "bay": "005", "bradford": "007", "brevard": "009", "broward": "011",
+    "calhoun": "013", "charlotte": "015", "citrus": "017", "clay": "019", "collier": "021", "columbia": "023",
+    "desoto": "027", "dixie": "029", "duval": "031", "escambia": "033", "flagler": "035", "franklin": "037",
+    "gadsden": "039", "gilchrist": "041", "glades": "043", "gulf": "045", "hamilton": "047", "hardee": "049",
+    "hendry": "051", "hernando": "053", "highlands": "055", "hillsborough": "057", "holmes": "059",
+    "indianriver": "061", "jackson": "063", "jefferson": "065", "lafayette": "067", "lake": "069", "lee": "071",
+    "leon": "073", "levy": "075", "liberty": "077", "madison": "079", "manatee": "081", "marion": "083",
+    "martin": "085", "miamidade": "086", "monroe": "087", "nassau": "089", "okaloosa": "091", "okeechobee": "093",
+    "orange": "095", "osceola": "097", "palmbeach": "099", "pasco": "101", "pinellas": "103", "polk": "105",
+    "putnam": "107", "stjohns": "109", "stlucie": "111", "santarosa": "113", "sarasota": "115", "seminole": "117",
+    "sumter": "119", "suwannee": "121", "taylor": "123", "union": "125", "volusia": "127", "wakulla": "129",
+    "walton": "131", "washington": "133",
+}
+
+
+def fl_county_same_code(county: str) -> str | None:
+    """SAME code for a Florida county name, tolerant of "Miami Dade", "St. Johns", "De Soto"."""
+    key = "".join(ch for ch in county.lower().replace("saint", "st") if ch.isalpha())
+    fips = FL_COUNTY_FIPS.get(key)
+    return f"012{fips}" if fips else None
+
 
 def point_in_polygon(lat: float, lon: float, geometry: dict) -> bool:
     """GeoJSON Polygon / MultiPolygon containment (ray casting, outer rings only)."""

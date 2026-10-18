@@ -48,6 +48,8 @@ class Site(Contract):
     updated_at: UtcDatetime
     conditions: SiteConditions | None = None
     history: list[IndexPoint] | None = Field(default=None, description="Today's index values, oldest first")
+    # FEMA NFHL flood zone at the plant (A/AE/AH/AO = 100-year floodplain, VE = coastal wave hazard).
+    flood_zone: str | None = None
     # Not read by the app yet.
     risk_level: str | None = None
     model_version: str | None = None
@@ -204,6 +206,10 @@ class Health(Contract):
     scored_sites: int
     last_scored_at: UtcDatetime | None = None
     active_holds: int
+    # e.g. {"weather": "open-meteo", "alerts": "nws", "lightning": "glm"}
+    data_sources: dict[str, str] = Field(default_factory=dict)
+    last_weather_at: UtcDatetime | None = None
+    stale_sites: int = 0
 
 
 class DecisionLogEntry(Contract):
@@ -219,6 +225,25 @@ class DecisionLogEntry(Contract):
 class ErrorBody(Contract):
     error: str
     detail: Any = None
+
+
+class SimulateIn(Contract):
+    """Inject a scripted event into the live pipeline (Settings → Simulate or
+    the server prompt: `python -m crewsafe.prompt "lightning at 664"`)."""
+    kind: str = Field(default="", description="lightning | heat | flood | briefing | clear (or set prompt)")
+    site_id: int | None = None
+    miles: float = Field(default=4.0, ge=0.1, le=30, description="Strike distance for kind=lightning")
+    prompt: str | None = Field(default=None, description="Natural-language command, e.g. 'flood at Turkey Point'")
+
+
+class SimulateOut(Contract):
+    kind: str
+    site_id: int | None = None
+    detail: str
+    hazard_index: float | None = None
+    heat_index_f: float | None = None
+    rain24h_in: float | None = None
+    active_hold: bool = False
 
 
 # --- WebSocket -------------------------------------------------------------

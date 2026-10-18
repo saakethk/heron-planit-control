@@ -10,16 +10,18 @@ Bad payloads go to the dead-letter topic instead of stopping the consumer.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
 from ..contracts.common import utcnow
 from ..contracts.events import CleanConditions, Forecast, RawNwsAlert, RawObservation, SiteNwsAlert
-from ..geo import point_in_polygon
+from ..geo import fl_county_same_code, point_in_polygon
+from ..ingestion.sources.open_meteo import SOIL_MOISTURE_LAYERS, SOIL_TEMPERATURE_LAYERS
 from ..messaging import topics
 from ..messaging.bus import MessageBus
 from ..storage.repository import Repository
-from .features import heat_index_f
+from .features import KMH_PER_MPH, MM_PER_IN, MODEL_WEATHER_COLUMNS, heat_index_f
 
 log = logging.getLogger(__name__)
 
@@ -42,8 +44,87 @@ def _parse_time(value: str) -> datetime:
     return datetime.fromisoformat(value).replace(tzinfo=UTC)
 
 
+def _c_to_f(c: float) -> float:
+    return round(c * 9 / 5 + 32, 1)
+
+
+def _layer_mean(series: dict[str, list], layers: dict[str, float], hours: Iterable[int]) -> float | None:
+    """Thickness-weighted mean over soil layers, averaged over the given hours."""
+    values = []
+    for h in hours:
+        row = [(series[name][h], weight) for name, weight in layers.items() if series[name][h] is not None]
+        if row:
+            values.append(sum(v * w for v, w in row) / sum(w for _, w in row))
+    return sum(values) / len(values) if values else None
+
+
+def _model_inputs(daily: dict[str, list], soil: dict[str, list], d: int) -> dict[str, float]:
+    """One UTC day of the trained model's weather columns, in the archive API's units."""
+    day = daily["time"][d]
+    hours = [h for h, t in enumerate(soil["time"]) if t.startswith(day)]
+    row = {"snowfall_sum": 0.0, **{name: daily[name][d] for name in MODEL_WEATHER_COLUMNS if name in daily}}
+    row["soil_moisture_0_to_100cm_mean"] = _layer_mean(soil, SOIL_MOISTURE_LAYERS, hours)
+    row["soil_temperature_0_to_100cm_mean"] = _layer_mean(soil, SOIL_TEMPERATURE_LAYERS, hours)
+    return {k: float(v) for k, v in row.items() if v is not None}
+
+
+def normalize_open_meteo_live(payload: dict[str, Any]) -> dict[str, Any]:
+    """Live Open-Meteo payload (see ingestion/sources/open_meteo.py) -> flat fields:
+    imperial current conditions for the app plus the model's daily inputs."""
+    current, hourly = payload["current"], payload["hourly"]
+    daily, soil = payload["model"]["daily"], payload["model"]["hourly"]
+    obs_time = _parse_time(current["time"])
+
+    hour_key = obs_time.strftime("%Y-%m-%dT%H:00")
+    times = hourly["time"]
+    i = times.index(hour_key) if hour_key in times else min(23, len(times) - 1)
+    precip = [p or 0.0 for p in hourly["precipitation"]]
+    days = daily["time"]
+    today = obs_time.date().isoformat()
+    d = days.index(today) if today in days else len(days) - 2
+    rain_mm = [p or 0.0 for p in daily["precipitation_sum"]]
+    soil_hour = soil["time"].index(hour_key) if hour_key in soil["time"] else None
+    # 3-27 cm: the layer trench walls and footings sit in.
+    shallow = _layer_mean(soil, dict(list(SOIL_MOISTURE_LAYERS.items())[:2]), [soil_hour]) \
+        if soil_hour is not None else None
+
+    forecast = None
+    if d + 1 < len(days):
+        tomorrow = days[d + 1]
+        cape_tomorrow = [c or 0 for t, c in zip(times, hourly["cape"]) if t.startswith(tomorrow)]
+        forecast = Forecast(
+            max_temp_f=_c_to_f(daily["temperature_2m_max"][d + 1]),
+            max_heat_index_f=_c_to_f(daily["apparent_temperature_max"][d + 1]),
+            precip_in=round(rain_mm[d + 1] / MM_PER_IN, 2),
+            precip_probability=daily["precipitation_probability_max"][d + 1] or 0,
+            max_cape=max(cape_tomorrow, default=0),
+            max_wind_gust_mph=round(daily["wind_gusts_10m_max"][d + 1] / KMH_PER_MPH, 1),
+            model_inputs=_model_inputs(daily, soil, d + 1),
+        )
+
+    return {
+        "obs_time": obs_time,
+        "temperature_f": current["temperature_2m"],
+        "humidity_pct": current["relative_humidity_2m"],
+        "wind_mph": current["wind_speed_10m"],
+        "wind_gust_mph": current.get("wind_gusts_10m") or current["wind_speed_10m"],
+        "precip_1h_in": current.get("precipitation") or 0.0,
+        "rain_24h_in": round(sum(precip[max(0, i - 23):i + 1]), 2),
+        "rain_3d_in": round(sum(rain_mm[max(0, d - 2):d + 1]) / MM_PER_IN, 2),
+        "rain_7d_in": round(sum(rain_mm[max(0, d - 6):d + 1]) / MM_PER_IN, 2),
+        "cape": hourly["cape"][i] or 0.0,
+        "soil_moisture_pct": round(min(100.0, (shallow or 0.0) / SATURATED_M3_M3 * 100), 1),
+        "weather_code": current.get("weather_code"),
+        "forecast": forecast,
+        "model_inputs": _model_inputs(daily, soil, d),
+    }
+
+
 def normalize_open_meteo(payload: dict[str, Any]) -> dict[str, Any]:
-    """Open-Meteo response (imperial units, GMT) -> flat fields."""
+    """Open-Meteo-shaped response (imperial units, GMT) -> flat fields. The live
+    source adds a "model" block; the dummy world's payload doesn't have one."""
+    if "model" in payload:
+        return normalize_open_meteo_live(payload)
     current, hourly, daily = payload["current"], payload["hourly"], payload["daily"]
     extras = payload.get("extras") or {}
     obs_time = _parse_time(current["time"])
@@ -143,6 +224,9 @@ class Transformer:
         if not site_ids and alert.geometry:
             site_ids = [s.id for s in await self.repo.list_sites()
                         if point_in_polygon(s.latitude, s.longitude, alert.geometry)]
+        elif not site_ids and alert.same_codes:
+            codes = set(alert.same_codes)
+            site_ids = [s.id for s in await self.repo.list_sites() if fl_county_same_code(s.county) in codes]
         for site_id in site_ids:
             await self.bus.publish(topics.CLEAN_NWS_ALERTS, SiteNwsAlert(
                 site_id=site_id, alert_id=alert.alert_id, event=alert.event, severity=alert.severity,

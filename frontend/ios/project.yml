@@ -52,15 +52,15 @@ targets:
     info:
       path: CrewSafe/Info.plist
       properties:
-        CFBundleDisplayName: CrewSafe
+        CFBundleDisplayName: Heron
         UILaunchScreen:
           UIColorName: LaunchBackground
         UISupportedInterfaceOrientations:
           - UIInterfaceOrientationPortrait
-        NSCameraUsageDescription: CrewSafe uses the camera so you can attach photos to hazard reports.
-        NSPhotoLibraryUsageDescription: CrewSafe lets you attach existing photos to hazard reports.
-        NSLocationWhenInUseUsageDescription: CrewSafe uses your location to tag hazard reports and find the nearest job site.
-        NSLocalNetworkUsageDescription: CrewSafe connects to a development server on your network for live hazard data.
+        NSCameraUsageDescription: Heron uses the camera so you can attach photos to hazard reports.
+        NSPhotoLibraryUsageDescription: Heron lets you attach existing photos to hazard reports.
+        NSLocationWhenInUseUsageDescription: Heron uses your location to tag hazard reports and find the nearest job site.
+        NSLocalNetworkUsageDescription: Heron connects to a development server on your network for live hazard data.
         UIBackgroundModes:
           - fetch
           - remote-notification

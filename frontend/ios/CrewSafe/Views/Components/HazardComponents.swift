@@ -38,33 +38,35 @@ struct HazardGauge: View {
     }
 }
 
-/// Four-band bar with a marker at the current index, as in the mockup's Today card.
+/// Four-band bar with a marker at the current index. Equal-width capsules stay
+/// readable at any card width; the marker still tracks the 0–10 scale.
 struct RiskBandBar: View {
     let index: Double
 
     var body: some View {
         let current = RiskLevel(index: index)
-        GeometryReader { geo in
-            let gap: CGFloat = 4
-            let usable = geo.size.width - gap * 3
-            ZStack(alignment: .leading) {
-                HStack(spacing: gap) {
-                    ForEach(RiskLevel.allCases, id: \.self) { level in
-                        Capsule()
-                            .fill(level.color.opacity(level == current ? 1 : 0.28))
-                            .frame(width: usable * (level.range.upperBound - level.range.lowerBound) / 10)
-                    }
+        ZStack(alignment: .leading) {
+            HStack(spacing: 4) {
+                ForEach(RiskLevel.allCases, id: \.self) { level in
+                    Capsule()
+                        .fill(level.color.opacity(level == current ? 1 : 0.28))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 6)
                 }
+            }
+            GeometryReader { geo in
                 Circle()
                     .fill(.white)
-                    .frame(width: 12, height: 12)
-                    .shadow(color: .black.opacity(0.5), radius: 2)
-                    .offset(x: min(max(geo.size.width * index / 10 - 6, 0), geo.size.width - 12))
+                    .frame(width: 10, height: 10)
+                    .shadow(color: .black.opacity(0.45), radius: 1.5)
+                    .offset(x: min(max(geo.size.width * index / 10 - 5, 0), max(geo.size.width - 10, 0)))
+                    .frame(maxHeight: .infinity, alignment: .center)
             }
-            .frame(height: 12)
         }
         .frame(height: 12)
         .animation(.spring, value: index)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Hazard index \(index.oneDecimal) of 10")
     }
 }
 
@@ -344,9 +346,9 @@ struct ConditionTile: View {
             Text(label).font(.caption2).foregroundStyle(Palette.secondaryText)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Palette.stroke))
+        .padding(10)
+        .background(Palette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 14, style: .continuous).stroke(Palette.stroke))
     }
 }
 
@@ -354,20 +356,28 @@ struct ConditionsRow: View {
     let conditions: SiteConditions
 
     var body: some View {
-        HStack(spacing: 10) {
-            ConditionTile(
-                symbol: "thermometer.sun.fill", value: "\(Int(conditions.heatIndexF))°", label: "Heat index",
-                tint: conditions.heatIndexF >= 105 ? RiskLevel.high.color : .white)
-            ConditionTile(
-                symbol: "bolt.fill",
-                value: conditions.nearestStrikeMiles.map { "\($0.formatted()) mi" } ?? "None",
-                label: "Nearest strike",
-                tint: (conditions.nearestStrikeMiles ?? 99) <= LightningPolicy.stopWorkRadiusMiles ? Palette.stopWork : .white)
-            ConditionTile(
-                symbol: "cloud.rain.fill", value: "\(conditions.rain24hIn.formatted()) in", label: "Rain 24h",
-                tint: conditions.rain24hIn >= 2 ? HazardType.flood.color : .white)
-            ConditionTile(symbol: "wind", value: "\(Int(conditions.windMph)) mph", label: "Wind")
+        ViewThatFits(in: .horizontal) {
+            HStack(spacing: 8) { tiles }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                tiles
+            }
         }
+    }
+
+    @ViewBuilder
+    private var tiles: some View {
+        ConditionTile(
+            symbol: "thermometer.sun.fill", value: "\(Int(conditions.heatIndexF))°", label: "Heat index",
+            tint: conditions.heatIndexF >= 105 ? RiskLevel.high.color : .white)
+        ConditionTile(
+            symbol: "bolt.fill",
+            value: conditions.nearestStrikeMiles.map { "\($0.formatted()) mi" } ?? "None",
+            label: "Nearest strike",
+            tint: (conditions.nearestStrikeMiles ?? 99) <= LightningPolicy.stopWorkRadiusMiles ? Palette.stopWork : .white)
+        ConditionTile(
+            symbol: "cloud.rain.fill", value: "\(conditions.rain24hIn.formatted()) in", label: "Rain 24h",
+            tint: conditions.rain24hIn >= 2 ? HazardType.flood.color : .white)
+        ConditionTile(symbol: "wind", value: "\(Int(conditions.windMph)) mph", label: "Wind")
     }
 }
 
@@ -384,8 +394,8 @@ struct FilterChip: View {
                 Text(title).font(.subheadline.weight(.semibold))
             }
             .foregroundStyle(isSelected ? Color.black : .white)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 11)
+            .padding(.vertical, 6)
             .background(isSelected ? AnyShapeStyle(Color.white) : AnyShapeStyle(.ultraThinMaterial), in: Capsule())
             .overlay(Capsule().stroke(Palette.stroke))
         }
@@ -437,7 +447,7 @@ struct SectionHeader<Trailing: View>: View {
 
     var body: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text(title).font(.title3.weight(.bold))
+            Text(title).font(.headline)
             Spacer()
             trailing
         }

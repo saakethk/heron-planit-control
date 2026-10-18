@@ -12,8 +12,9 @@ from ..contracts.common import Contract, Role, UtcDatetime
 class SiteRecord(Contract):
     """Static site attributes (the scoring "site layer").
 
-    `id`..`capacity_mw` come from EIA-860M. The rest are placeholders until the
-    GIS joins exist (FEMA flood zones, USGS elevation, NLD levees, habitat maps).
+    `id`..`capacity_mw` come from EIA-860M and the `fema_*` fields from the FEMA
+    NFHL join, both via the pipeline database. `near_river`, `elevation_ft`, and
+    `wildlife_habitat` are placeholders until those GIS joins exist.
     """
     id: int
     name: str
@@ -21,6 +22,10 @@ class SiteRecord(Contract):
     latitude: float
     longitude: float
     capacity_mw: float
+    flood_zone: str | None = None
+    fema_sfha: bool = False
+    fema_coastal: bool = False
+    fema_score: float = 0.05
     coastal: bool = False
     near_river: bool = False
     elevation_ft: float = 30.0

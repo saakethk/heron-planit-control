@@ -19,7 +19,7 @@ def create_sources(settings: Settings, sites: list[SiteRecord]) -> tuple[Weather
 
     if settings.weather_source == "open-meteo":
         from .open_meteo import OpenMeteoSource
-        weather: WeatherSource = OpenMeteoSource()
+        weather: WeatherSource = OpenMeteoSource(settings)
     else:
         from .dummy import DummyWeatherSource
         weather = DummyWeatherSource(dummy_world())
@@ -32,7 +32,10 @@ def create_sources(settings: Settings, sites: list[SiteRecord]) -> tuple[Weather
         alerts = DummyAlertSource(dummy_world())
 
     lightning: LightningSource | None = None
-    if settings.lightning_source == "dummy":
+    if settings.lightning_source == "glm":
+        from .glm import GlmLightningSource
+        lightning = GlmLightningSource(settings.glm_bucket)
+    elif settings.lightning_source == "dummy":
         from .dummy import DummyLightningSource
         lightning = DummyLightningSource(dummy_world())
     return weather, alerts, lightning

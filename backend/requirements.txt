@@ -6,5 +6,12 @@ httpx>=0.27
 PyJWT>=2.8
 python-multipart>=0.0.9
 
+# Real data (DATA_SOURCE=real): the pipeline's trained model and GOES lightning files
+scikit-learn>=1.9,<1.10  # must match the version that pickled pipeline/model/artifacts
+joblib>=1.4
+numpy>=1.26
+pandas>=2.2
+h5py>=3.10
+
 # Tests
 pytest>=8.0

@@ -49,6 +49,7 @@ final class AppStore {
     private(set) var fastAllClear = false
     private(set) var liveFeedEnabled = true
     var loadError: String?
+    var lastSimulateMessage: String?
     var selectedTab: AppTab = .dashboard
     var presentedSite: SiteSheet?
     @ObservationIgnored var promptsForNotificationsOnStart = true
@@ -493,37 +494,88 @@ final class AppStore {
     }
 
     func simulateLightningStrike(siteId: Int? = nil) {
-        handle(.lightningStrike(LightningStrike(
-            siteId: siteId ?? homeSiteId,
-            distanceMiles: Double.random(in: 2...9).rounded(toPlaces: 1),
-            occurredAt: .now,
-            direction: MockData.directions.randomElement())))
+        let target = siteId ?? homeSiteId
+        if usesMockBackend {
+            handle(.lightningStrike(LightningStrike(
+                siteId: target,
+                distanceMiles: Double.random(in: 2...9).rounded(toPlaces: 1),
+                occurredAt: .now,
+                direction: MockData.directions.randomElement())))
+            return
+        }
+        Task { await runLiveSimulation(kind: "lightning", siteId: target, miles: 4) }
     }
 
     func simulateFloodWarning() {
-        handle(.alert(HazardAlert(
-            id: UUID().uuidString, siteId: homeSiteId, type: .flood, severity: .warning,
-            title: "Flood risk after heavy rain",
-            message: "3.1 in. of rain in 12 hours. Low-lying access roads may be impassable.",
-            issuedAt: .now, acknowledged: false, source: "NWS")))
+        if usesMockBackend {
+            handle(.alert(HazardAlert(
+                id: UUID().uuidString, siteId: homeSiteId, type: .flood, severity: .warning,
+                title: "Flood risk after heavy rain",
+                message: "3.1 in. of rain in 12 hours. Low-lying access roads may be impassable.",
+                issuedAt: .now, acknowledged: false, source: "NWS")))
+            return
+        }
+        Task { await runLiveSimulation(kind: "flood", siteId: homeSiteId) }
     }
 
     func simulateHeatSpike() {
-        guard let site = homeSite else { return }
-        var factors = site.factors.filter { $0.type != .heat }
-        factors.append(HazardFactor(type: .heat, score: 9.3, detail: "Heat index 113°F. Stop strenuous work."))
-        if let i = siteIndex[site.id] {
-            sites[i].conditions?.heatIndexF = 113
+        if usesMockBackend {
+            guard let site = homeSite else { return }
+            var factors = site.factors.filter { $0.type != .heat }
+            factors.append(HazardFactor(type: .heat, score: 9.3, detail: "Heat index 113°F. Stop strenuous work."))
+            if let i = siteIndex[site.id] {
+                sites[i].conditions?.heatIndexF = 113
+            }
+            handle(.hazardIndexUpdated(siteId: site.id, hazardIndex: max(site.hazardIndex, 8.7), factors: factors))
+            return
         }
-        handle(.hazardIndexUpdated(siteId: site.id, hazardIndex: max(site.hazardIndex, 8.7), factors: factors))
+        Task { await runLiveSimulation(kind: "heat", siteId: homeSiteId) }
+    }
+
+    /// Sends the event through the backend pipeline so scores, alerts, and
+    /// notifications update the same way a real Open-Meteo / GLM observation would.
+    @discardableResult
+    func runLiveSimulation(kind: String, siteId: Int?, miles: Double? = nil) async -> Bool {
+        do {
+            let result = try await api.simulate(kind: kind, siteId: siteId, miles: miles)
+            lastSimulateMessage = result.detail
+            await refresh()
+            if let holds = try? await api.fetchActiveHolds() {
+                for hold in holds { lightningHolds[hold.siteId] = hold }
+                let active = Set(holds.map(\.siteId))
+                for siteId in lightningHolds.keys where !active.contains(siteId) {
+                    lightningHolds[siteId] = nil
+                    markLightningCleared(siteId: siteId)
+                }
+            }
+            if let siteId, kind == "lightning" || kind == "clear" {
+                await loadBriefing(siteId: siteId)
+            }
+            return true
+        } catch {
+            lastSimulateMessage = "Couldn't send the simulated event. Is the backend running?"
+            return false
+        }
     }
 
     func sendTestBriefing() {
-        notifications.sendTestBriefing(summary: nextDayBriefing?.summary)
+        if usesMockBackend {
+            notifications.sendTestBriefing(summary: nextDayBriefing?.summary)
+            return
+        }
+        Task {
+            if await runLiveSimulation(kind: "briefing", siteId: homeSiteId) {
+                await refresh()
+            }
+        }
     }
 
     /// Ends every hold on the next monitor tick, which posts the all-clear alerts.
     func clearLightningHolds() {
+        if !usesMockBackend {
+            Task { await runLiveSimulation(kind: "clear", siteId: nil) }
+            return
+        }
         for (siteId, var hold) in lightningHolds {
             notifications.cancelAllClear(siteId: siteId)
             hold.lastStrikeAt = .now.addingTimeInterval(-hold.allClearInterval)

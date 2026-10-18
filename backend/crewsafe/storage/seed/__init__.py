@@ -1,7 +1,8 @@
-"""Seed data: the 346 EIA plants plus demo history (past alerts and crew reports).
+"""Seed data: the 346 EIA plants (from the pipeline database, with FEMA flood
+zones) plus, in dummy mode only, demo history (past alerts and crew reports).
 
 Live state (conditions, scores, holds, new alerts) is NOT seeded here: it comes
-out of the pipeline, fed by the dummy sources, exactly as it will with real data.
+out of the pipeline, fed by the real or dummy sources.
 """
 
 from __future__ import annotations
@@ -12,8 +13,10 @@ import random
 from datetime import timedelta
 from pathlib import Path
 
+from ...config import Settings
 from ...contracts.api import HazardAlert
 from ...contracts.common import AlertSeverity, HazardType, Role, utcnow
+from ...pipeline_bridge import load_sites
 from ...security import hash_password
 from ..models import SiteRecord, StoredReport, UserRecord
 from ..repository import Repository
@@ -42,21 +45,26 @@ def load_plants(path: str) -> list[dict]:
     return json.loads(Path(path).read_text())
 
 
-def site_records(plants: list[dict]) -> list[SiteRecord]:
-    """Placeholder site layer until GIS joins exist (FEMA flood zones, USGS
-    elevation, NLD levees, habitat maps). Seeded by plant ID so it's stable."""
+def site_records(plants: list[dict], demo_layer: bool = True) -> list[SiteRecord]:
+    """FEMA fields come from the pipeline database when present. Elevation, river
+    proximity, and habitat are placeholders until those GIS joins exist; seeded by
+    plant ID so they're stable."""
     records = []
     for plant in plants:
         rng = random.Random(plant["id"] * 31)
-        coastal = plant["county"] in COASTAL_COUNTIES and rng.random() < 0.6
+        if "flood_zone" in plant:
+            coastal = plant["fema_coastal"] or (plant["county"] in COASTAL_COUNTIES and plant["fema_sfha"])
+        else:
+            coastal = plant["county"] in COASTAL_COUNTIES and rng.random() < 0.6
         attrs = dict(
             coastal=coastal,
             near_river="river" in plant["name"].lower() or rng.random() < 0.18,
             elevation_ft=round(rng.uniform(4, 18) if coastal else rng.uniform(20, 220)),
             wildlife_habitat=round(rng.uniform(0.1, 0.8), 2),
         )
-        attrs.update(DEMO_SITE_LAYER.get(plant["id"], {}))
-        records.append(SiteRecord(**plant, **attrs))
+        if demo_layer:
+            attrs.update(DEMO_SITE_LAYER.get(plant["id"], {}))
+        records.append(SiteRecord(**{**plant, **attrs}))
     return records
 
 
@@ -102,8 +110,9 @@ def _reports(now) -> list[StoredReport]:
     ]
 
 
-async def seed(repo: Repository, sites_file: str) -> None:
-    await repo.upsert_sites(site_records(load_plants(sites_file)))
+async def seed(repo: Repository, settings: Settings) -> None:
+    plants = load_sites(settings) or load_plants(settings.sites_file)
+    await repo.upsert_sites(site_records(plants, demo_layer=settings.seed_demo_history))
 
     # Local-development accounts only. Real users come from the identity provider.
     password = os.environ.get("DEMO_PASSWORD") or "demo"
@@ -112,6 +121,8 @@ async def seed(repo: Repository, sites_file: str) -> None:
         await repo.upsert_user(UserRecord(username=username, display_name=name,
                                           password_hash=hash_password(password), role=role))
 
+    if not settings.seed_demo_history:
+        return
     now = utcnow()
     for report in _reports(now):
         await repo.save_report(report)

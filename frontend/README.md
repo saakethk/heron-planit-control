@@ -19,7 +19,7 @@ The iOS app, **CrewSafe**, lives in [`ios/`](ios). It is native Swift and SwiftU
    The `.xcodeproj` is generated from `project.yml` and is git-ignored. Re-run `xcodegen generate` after adding or removing files.
 3. Pick an iPhone simulator and press **Run** (⌘R). Allow notifications when prompted.
 
-To use the backend in `backend/` instead of built-in data, start it (see `backend/README.md`) and add the launch argument `-useLiveBackend YES`. On a phone, also add `-apiBaseURL http://<your-mac-name>.local:8000/api/v1/`.
+To use the backend in `backend/` instead of built-in data, start it (see `backend/README.md`; default is live Open-Meteo / NWS / GLM) and add the launch argument `-useLiveBackend YES`. On a phone, also add `-apiBaseURL http://<your-mac-name>.local:8000/api/v1/`. Settings → Backend should show **Live API** and the API URL. **Simulate** sends lightning, heat, and flood through the live pipeline so the index, alerts, and notifications update. Site detail shows the FEMA flood zone when the backend sends one.
 
 Without that argument, the app runs entirely on built-in dummy data, matching the design in `design/crewsafe-mockup-preview.png`:
 - On first launch it asks for a location, defaulting to Gainesville, FL. The home site becomes the nearest plant (John R Kelly, 0.4 mi), which starts with an active lightning hold.

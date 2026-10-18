@@ -52,11 +52,12 @@ class ScoringService:
                 await self.rescore(report.site_id)
         elif topic == topics.LIGHTNING_SITE_STRIKES:
             strike = SiteStrike(**value)
-            strikes = self.recent_strikes[strike.site_id]
-            strikes.append(strike)
             cutoff = utcnow() - STRIKE_WINDOW
-            self.recent_strikes[strike.site_id] = [s for s in strikes if s.occurred_at >= cutoff]
-            if strike.distance_miles <= RESCORE_STRIKE_MILES:
+            earlier = [s for s in self.recent_strikes[strike.site_id] if s.occurred_at >= cutoff]
+            self.recent_strikes[strike.site_id] = earlier + [strike]
+            # A busy storm sends hundreds of flashes; rescore only when one changes the picture.
+            closest = min((s.distance_miles for s in earlier), default=None)
+            if strike.distance_miles <= RESCORE_STRIKE_MILES and (closest is None or strike.distance_miles < closest):
                 await self.rescore(strike.site_id)
 
     async def rescore(self, site_id: int) -> HazardScore | None:
@@ -79,9 +80,10 @@ class ScoringService:
         scores = {hazard: p.score for hazard, p in predictions.items()}
         drivers = {hazard.value: p.drivers for hazard, p in predictions.items()}
 
-        scores[HazardType.heat] = rules.heat_score(c.heat_index_f)
-        drivers[HazardType.heat.value] = [HazardDriver(feature="heat_index_f", contribution=scores[HazardType.heat],
-                                                       value=c.heat_index_f)]
+        if HazardType.heat not in scores:
+            scores[HazardType.heat] = rules.heat_score(c.heat_index_f)
+            drivers[HazardType.heat.value] = [HazardDriver(feature="heat_index_f", contribution=scores[HazardType.heat],
+                                                           value=c.heat_index_f)]
         reports = [r for r in await self.repo.list_reports([c.site_id], at - timedelta(hours=24), 50)
                    if r.created_at <= at]
         wildlife, sighting = rules.wildlife_score(site, reports, at)
@@ -91,7 +93,7 @@ class ScoringService:
 
         details = {
             hazard: rules.factor_detail(hazard, features, predictions[hazard].drivers if hazard in predictions else [],
-                                        nearest.direction if nearest else None, sighting)
+                                        nearest.direction if nearest else None, sighting, site.flood_zone)
             for hazard in scores
         }
 
@@ -99,7 +101,7 @@ class ScoringService:
         if c.forecast:
             tomorrow = {h: p.score for h, p in
                         self.model.predict(build_forecast_features(c.forecast, c, site)).items()}
-            tomorrow[HazardType.heat] = rules.heat_score(c.forecast.max_heat_index_f)
+            tomorrow.setdefault(HazardType.heat, rules.heat_score(c.forecast.max_heat_index_f))
             forecast_index = rules.compound_index(tomorrow)
             forecast_text = rules.forecast_headline(c.forecast, tomorrow)
 

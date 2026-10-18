@@ -20,6 +20,7 @@ API = "/api/v1"
 def test_health(client):
     body = client.get(f"{API}/health").json()
     assert body["status"] == "ok" and body["sites"] == 346 and body["scored_sites"] == 346
+    assert body["data_sources"] == {"weather": "dummy", "alerts": "dummy", "lightning": "dummy"}
 
 
 def test_sites_match_app_model(client):

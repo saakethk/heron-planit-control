@@ -2,7 +2,8 @@
 
 Local mode (default): one process runs pollers, transformer, lightning engine,
 scoring, alerts, and the API on an in-memory bus with the in-memory repository.
-This is the architecture's no-Kafka fallback, and what the demo uses.
+This is the architecture's no-Kafka fallback, and what the demo uses. Data comes
+from the live feeds and the pipeline's model by default (DATA_SOURCE=real).
 
 Kafka mode: each service runs as its own process (`python -m crewsafe.run <service>`),
 connected by Kafka and sharing Postgres. See crewsafe/run.py.
@@ -14,6 +15,7 @@ import asyncio
 import logging
 from dataclasses import dataclass, field
 from datetime import timedelta
+from functools import partial
 
 from .config import Settings
 from .contracts.common import utcnow
@@ -79,8 +81,8 @@ def build_pipeline(settings: Settings, bus: MessageBus | None = None, repo: Repo
 async def ensure_seeded(p: Pipeline) -> None:
     await p.repo.connect()
     if await p.repo.is_empty():
-        log.info("seeding sites and demo history")
-        await seed(p.repo, p.settings.sites_file)
+        log.info("seeding sites%s", " and demo history" if p.settings.seed_demo_history else "")
+        await seed(p.repo, p.settings)
 
 
 async def attach_poller(p: Pipeline) -> Poller:
@@ -90,20 +92,20 @@ async def attach_poller(p: Pipeline) -> Poller:
 
 
 async def bootstrap(p: Pipeline) -> None:
-    """First readings at startup. With the dummy source, also backfill today's
-    history through the real pipeline so the index charts have a trend."""
+    """First readings at startup, after backfilling the last few hours through
+    the pipeline so the index charts have a trend (Open-Meteo's past hourly
+    readings, or the dummy world's history). Backfilled scores never alert."""
     assert p.poller is not None
     now = utcnow()
-    if p.settings.weather_source == "dummy" and p.settings.backfill_hours > 0:
-        for step in range(p.settings.backfill_hours * 2, 0, -1):
-            await p.poller.poll_weather(at=now - timedelta(minutes=30 * step))
-            await p.drain()
-    await p.poller.poll_weather()
-    await p.drain()
-    await p.poller.poll_lightning()
-    await p.drain()
-    await p.poller.poll_alerts()
-    await p.drain()
+    steps = [p.poller.poll_weather] if p.settings.backfill_hours <= 0 else \
+        [partial(p.poller.poll_weather, at=now - timedelta(minutes=30 * step))
+         for step in range(p.settings.backfill_hours * 2, 0, -1)] + [p.poller.poll_weather]
+    for job in [p.poller.poll_lightning, p.poller.poll_alerts] + steps:
+        try:
+            await job()
+        except Exception:  # a feed that's down at startup is retried by the pollers
+            log.exception("startup poll failed")
+        await p.drain()
 
 
 async def _every(seconds: float, job, name: str) -> None:
@@ -122,13 +124,23 @@ async def start_local(p: Pipeline) -> None:
     await ensure_seeded(p)
     await attach_poller(p)
     await p.bus.start()
-    await bootstrap(p)
+
+    # The live first fetch is paced to Open-Meteo's per-minute limit (about a
+    # minute), so the API starts serving right away and sites fill in as their
+    # readings arrive. The dummy world is instant and tests rely on it being done.
+    if p.settings.weather_source == "dummy":
+        await bootstrap(p)
+        if p.settings.run_pollers:
+            p.tasks.append(asyncio.create_task(_loops(p)))
+    else:
+        p.tasks.append(asyncio.create_task(_loops(p, bootstrap_first=True)))
+
+
+async def _loops(p: Pipeline, bootstrap_first: bool = False) -> None:
+    if bootstrap_first:
+        await bootstrap(p)
     if p.settings.run_pollers:
-        p.tasks += [
-            asyncio.create_task(p.poller.run()),
-            asyncio.create_task(p.lightning.run()),
-            asyncio.create_task(_every(300, p.transformer.flag_stale, "stale check")),
-        ]
+        await asyncio.gather(p.poller.run(), p.lightning.run(), _every(300, p.transformer.flag_stale, "stale check"))
 
 
 async def stop(p: Pipeline) -> None:

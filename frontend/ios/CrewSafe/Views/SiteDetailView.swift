@@ -30,13 +30,13 @@ struct SiteDetailView: View {
 
     @ViewBuilder
     private func content(_ site: Site) -> some View {
-        VStack(alignment: .leading, spacing: 18) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack(alignment: .center, spacing: 18) {
-                HazardGauge(index: site.hazardIndex, size: 120)
+                HazardGauge(index: site.hazardIndex, size: 96)
                 VStack(alignment: .leading, spacing: 6) {
                     Text("\(site.riskLevel.label) risk").font(.title2.weight(.bold))
                     TrendLabel(site: site)
-                    Text("\(site.county) County · \(site.capacityMw.formatted()) MW")
+                    Text(siteLine(site))
                         .font(.caption)
                         .foregroundStyle(Palette.tertiaryText)
                     if store.homeSiteId == site.id {
@@ -60,7 +60,7 @@ struct SiteDetailView: View {
                         Text("Hazard Index").font(.caption).foregroundStyle(Palette.secondaryText)
                     }
                     IndexSparkline(points: history, color: site.riskLevel.color)
-                        .frame(height: 140)
+                        .frame(height: 112)
                         .card()
                 }
             }
@@ -72,7 +72,7 @@ struct SiteDetailView: View {
             VStack(alignment: .leading, spacing: 10) {
                 SectionHeader(title: "Model factors")
                 VStack(alignment: .leading, spacing: 16) {
-                    ForEach(site.sortedFactors) { FactorRow(factor: $0) }
+                    ForEach(Array(site.sortedFactors.prefix(4))) { FactorRow(factor: $0) }
                 }
                 .card()
             }
@@ -85,8 +85,9 @@ struct SiteDetailView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(briefing.headline).font(.headline)
                         VStack(alignment: .leading, spacing: 0) {
-                            ForEach(Array(briefing.events.enumerated()), id: \.element.id) { offset, event in
-                                BriefingEventRow(event: event, isLast: offset == briefing.events.count - 1)
+                            let events = Array(briefing.events.prefix(3))
+                            ForEach(Array(events.enumerated()), id: \.element.id) { offset, event in
+                                BriefingEventRow(event: event, isLast: offset == events.count - 1)
                             }
                         }
                     }
@@ -103,7 +104,7 @@ struct SiteDetailView: View {
                     if alerts.isEmpty {
                         Text("No alerts for this site.").foregroundStyle(Palette.secondaryText)
                     }
-                    ForEach(alerts.prefix(5)) { alert in
+                    ForEach(alerts.prefix(3)) { alert in
                         AlertRow(alert: alert, siteName: site.name, acknowledged: store.isAcknowledged(alert))
                     }
                 }
@@ -146,6 +147,14 @@ struct SiteDetailView: View {
                 .foregroundStyle(Palette.tertiaryText)
                 .frame(maxWidth: .infinity)
         }
+    }
+
+    private func siteLine(_ site: Site) -> String {
+        var parts = ["\(site.county) County", "\(site.capacityMw.formatted()) MW"]
+        if let zone = site.floodZone, !zone.isEmpty {
+            parts.append("FEMA \(zone)")
+        }
+        return parts.joined(separator: " · ")
     }
 }
 

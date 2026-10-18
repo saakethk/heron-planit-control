@@ -36,7 +36,7 @@ struct ReportHazardView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("Report hazard").font(.largeTitle.weight(.bold))
+                        Text("Report").font(.title.weight(.bold))
                         Text("Supervisors and crews at the site are notified right away.")
                             .font(.subheadline)
                             .foregroundStyle(Palette.secondaryText)
@@ -51,7 +51,7 @@ struct ReportHazardView: View {
                     RecentReportsCard()
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 24)
+                .padding(.bottom, 28)
                 .readableWidth()
             }
             .scrollDismissesKeyboard(.interactively)
@@ -119,7 +119,7 @@ struct ReportHazardView: View {
                             .foregroundStyle(selected ? .black : .white)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
+                    .padding(.vertical, 12)
                     .background(selected ? type.color : Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(selected ? .clear : Palette.stroke))
                 }
@@ -213,7 +213,7 @@ struct ReportHazardView: View {
             Text(title).font(.footnote.weight(.semibold))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 22)
+        .padding(.vertical, 16)
         .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)

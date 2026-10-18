@@ -112,6 +112,8 @@ struct Site: Codable, Hashable, Identifiable, Sendable {
     var conditions: SiteConditions?
     /// Today's index values, oldest first.
     var history: [IndexPoint]?
+    /// FEMA NFHL flood zone at the plant (A/AE/AH/AO = 100-year floodplain). Live backend only.
+    var floodZone: String? = nil
 
     var coordinate: CLLocationCoordinate2D {
         CLLocationCoordinate2D(latitude: latitude, longitude: longitude)

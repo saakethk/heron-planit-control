@@ -9,7 +9,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>CrewSafe</string>
+	<string>Heron</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -32,13 +32,13 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>CrewSafe uses the camera so you can attach photos to hazard reports.</string>
+	<string>Heron uses the camera so you can attach photos to hazard reports.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>CrewSafe connects to a development server on your network for live hazard data.</string>
+	<string>Heron connects to a development server on your network for live hazard data.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>CrewSafe uses your location to tag hazard reports and find the nearest job site.</string>
+	<string>Heron uses your location to tag hazard reports and find the nearest job site.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>CrewSafe lets you attach existing photos to hazard reports.</string>
+	<string>Heron lets you attach existing photos to hazard reports.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>fetch</string>

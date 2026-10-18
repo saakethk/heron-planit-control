@@ -9,6 +9,7 @@ from ...contracts.api import HazardDriver, HazardFactor
 from ...contracts.common import HazardType
 from ...contracts.events import Forecast
 from ...storage.models import SiteRecord, StoredReport
+from ..features import KMH_PER_MPH, MM_PER_IN, THUNDERSTORM_CODES
 
 REPORT_WINDOW = timedelta(hours=6)
 WILDLIFE_WINDOW = timedelta(hours=24)
@@ -52,28 +53,48 @@ def compound_index(scores: dict[HazardType, float]) -> float:
 
 
 def factor_detail(hazard: HazardType, f: dict[str, float], drivers: list[HazardDriver],
-                  strike_direction: str | None, wildlife_report: StoredReport | None) -> str:
+                  strike_direction: str | None, wildlife_report: StoredReport | None,
+                  flood_zone: str | None = None) -> str:
     if hazard == HazardType.lightning:
         miles = f["nearest_strike_miles"]
         if miles <= 30:
             where = f"{miles:.1f} mi {strike_direction}" if strike_direction else f"{miles:.1f} mi away"
             return f"Lightning {where}" + (", inside the 10 mi radius" if miles <= 10 else "")
+        if int(f.get("current_weather_code", 0)) in THUNDERSTORM_CODES:
+            return "Thunderstorm reported at the site"
+        code = int(f.get("weather_code", 0))
+        gusts = round(f.get("wind_gusts_10m_max", f["wind_gust_mph"] * KMH_PER_MPH) / KMH_PER_MPH)
+        if code >= 95:
+            return "Thunderstorms forecast today"
+        if code >= 61:
+            return f"{'Showers' if code >= 80 else 'Rain'} today, gusts to {gusts} mph"
         return f"Storms possible (CAPE {round(f['cape'])} J/kg)"
     if hazard == HazardType.heat:
         hi = round(f["heat_index_f"])
-        return f"Heat index {hi}°F" + (", limit exposure to 45 min" if hi >= 105 else "")
+        peak = round(f["apparent_temperature_max"] * 9 / 5 + 32) if "apparent_temperature_max" in f else hi
+        text = f"Heat index {hi}°F" + (f", up to {peak}°F today" if peak >= hi + 3 else "")
+        return text + (", limit exposure to 45 min" if max(hi, peak) >= 105 else "")
     if hazard == HazardType.flood:
         top = max(drivers, key=lambda d: d.contribution).feature if drivers else "rain_24h_in"
         if top == "river_stage_ft_above_flood":
             return f"River {f['river_stage_ft_above_flood']:+.1f} ft vs flood stage"
         if top == "tide_ft_above_mhhw":
             return f"Tide {f['tide_ft_above_mhhw']:.1f} ft above high water"
-        return f"{f['rain_24h_in']:.1f} in. of rain in 24 hours"
+        today_in = f.get("precipitation_sum", 0.0) / MM_PER_IN
+        rain = f"{today_in:.1f} in. of rain today" if today_in > f["rain_24h_in"] \
+            else f"{f['rain_24h_in']:.1f} in. of rain in 24 hours"
+        if f.get("fema_is_sfha"):
+            return f"{rain}, FEMA flood zone {flood_zone}" if flood_zone else f"{rain}, in a FEMA floodplain"
+        return rain
     if hazard == HazardType.soil_saturation:
         soil = round(f["soil_moisture_pct"])
         return f"Soil {soil}% saturated" + (", trench walls unstable" if soil >= 85 else "")
     if hazard == HazardType.wildfire:
-        return f"Dry fuels nearby, KBDI {round(f['drought_index'])}"
+        if any(d.feature == "drought_index" for d in drivers):
+            return f"Dry fuels nearby, KBDI {round(f['drought_index'])}"
+        humidity = round(f.get("relative_humidity_2m_min", f["humidity_pct"]))
+        gusts = round(f.get("wind_gusts_10m_max", f["wind_gust_mph"] * KMH_PER_MPH) / KMH_PER_MPH)
+        return f"Humidity down to {humidity}%, gusts {gusts} mph"
     if hazard == HazardType.wildlife and wildlife_report:
         return wildlife_report.notes.split(".")[0][:80] or "Wildlife reported on site"
     return hazard.value.replace("_", " ").capitalize()
@@ -81,7 +102,9 @@ def factor_detail(hazard: HazardType, f: dict[str, float], drivers: list[HazardD
 
 def forecast_headline(forecast: Forecast, scores: dict[HazardType, float]) -> str:
     top = max(scores, key=scores.get)
-    if top == HazardType.lightning and forecast.precip_probability >= 30:
+    if scores[top] < 3:
+        text = "No significant hazards expected"
+    elif top == HazardType.lightning and forecast.precip_probability >= 30:
         text = f"Storms {round(forecast.precip_probability)}% likely"
     elif top == HazardType.heat:
         text = f"Heat index {round(forecast.max_heat_index_f)}°F; start crews early"

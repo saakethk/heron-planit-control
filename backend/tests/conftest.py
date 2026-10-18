@@ -10,7 +10,10 @@ from crewsafe.config import Settings
 
 
 def make_settings(tmp_path, **overrides) -> Settings:
-    return Settings(run_pollers=False, backfill_hours=1, photo_dir=str(tmp_path / "photos"), **overrides)
+    """The dummy world, whatever the environment says: tests stay offline and deterministic."""
+    dummy = dict(weather_source="dummy", alert_source="dummy", lightning_source="dummy", model_kind="dummy",
+                 seed_demo_history=True, weather_interval=30.0, alert_interval=45.0, lightning_interval=15.0)
+    return Settings(run_pollers=False, backfill_hours=1, photo_dir=str(tmp_path / "photos"), **{**dummy, **overrides})
 
 
 @pytest.fixture

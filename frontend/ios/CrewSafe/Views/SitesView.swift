@@ -24,7 +24,7 @@ struct SitesView: View {
     private static let florida = MKCoordinateRegion(
         center: CLLocationCoordinate2D(latitude: 28.5, longitude: -83.6),
         span: MKCoordinateSpan(latitudeDelta: 6.6, longitudeDelta: 6.6))
-    private static let filterTypes: [HazardType] = [.lightning, .flood, .heat, .wildlife, .soilSaturation, .wildfire]
+    private static let filterTypes: [HazardType] = [.lightning, .flood, .heat, .wildfire]
     /// Full pins at most; everything else is drawn as a small dot.
     private static let maxPins = 25
 
@@ -117,26 +117,29 @@ struct SitesView: View {
 
     var body: some View {
         NavigationStack {
-            GeometryReader { geo in
-                let panelHeight = geo.size.height * (panelExpanded ? 0.74 : 0.46)
-                let listing = makeListing()
-                let holds = store.activeHolds().compactMap { store.site(id: $0.siteId) }
-                ZStack(alignment: .bottom) {
-                    ZStack(alignment: .top) {
-                        map(listing, holdSites: holds)
-                            .overlay(alignment: .bottom) { mapFooter(showsRadius: !holds.isEmpty).padding(.bottom, 36) }
-                        topControls
-                    }
-                    .padding(.bottom, panelHeight - 26)
-
+            let listing = makeListing()
+            let holds = store.activeHolds().compactMap { store.site(id: $0.siteId) }
+            ZStack(alignment: .bottom) {
+                map(listing, holdSites: holds)
+                    .ignoresSafeArea(edges: .top)
+                VStack(spacing: 8) {
+                    Spacer(minLength: 0)
+                    mapFooter(showsRadius: !holds.isEmpty)
+                        .padding(.horizontal, 14)
                     rankedPanel(listing)
-                        .frame(height: panelHeight)
+                        .containerRelativeFrame(.vertical, alignment: .bottom) { height, _ in
+                            panelHeight(for: height)
+                        }
                 }
-                .animation(.spring(duration: 0.35), value: panelExpanded)
             }
+            .safeAreaInset(edge: .top, spacing: 8) { topControls }
+            .safeAreaPadding(.bottom)
+            .padding(.bottom, Self.floatingTabClearance)
+            .animation(.spring(duration: 0.32), value: panelExpanded)
             .background(Palette.background.ignoresSafeArea())
             .toolbar(.hidden, for: .navigationBar)
-            .onAppear { if !hasFitCamera { fitCamera(animated: false) } }            .onChange(of: store.siteIdsByDistance.first) { _, _ in
+            .onAppear { if !hasFitCamera { fitCamera(animated: false) } }
+            .onChange(of: store.siteIdsByDistance.first) { _, _ in
                 if !hasFitCamera { fitCamera(animated: false) }
             }
             .onChange(of: store.searchLocation) { _, _ in
@@ -150,6 +153,17 @@ struct SitesView: View {
                 fitCamera(animated: true)
             }
         }
+    }
+
+    /// iOS 26's floating tab bar sits on top of content and does not grow the bottom safe area.
+    private static var floatingTabClearance: CGFloat {
+        if #available(iOS 26, *) { 52 } else { 0 }
+    }
+
+    /// Collapsed: a short "Risk near you" strip above the tab bar.
+    /// Expanded: about half the screen, still clear of the tab bar.
+    private func panelHeight(for available: CGFloat) -> CGFloat {
+        panelExpanded ? min(available * 0.46, 480) : min(max(available * 0.24, 172), 208)
     }
 
     // MARK: Map
@@ -205,22 +219,20 @@ struct SitesView: View {
     }
 
     private var topControls: some View {
-        VStack(spacing: 10) {
-            HStack(spacing: 10) {
+        VStack(spacing: 8) {
+            HStack(spacing: 8) {
                 SiteSearchField(query: $search, siteCount: store.sites.count)
-
                 Button { satellite.toggle() } label: {
                     Image(systemName: satellite ? "map.fill" : "square.3.layers.3d")
-                        .font(.body.weight(.semibold))
-                        .frame(width: 46, height: 46)
-                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .font(.subheadline.weight(.semibold))
+                        .frame(width: 40, height: 40)
+                        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(satellite ? "Standard map" : "Satellite map")
             }
-
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     LocationChip()
                     FilterChip(title: "All", isSelected: filter == .all) { filter = .all }
                     ForEach(Self.filterTypes) { type in
@@ -231,8 +243,8 @@ struct SitesView: View {
                 }
             }
         }
-        .padding(.horizontal)
-        .padding(.top, 6)
+        .padding(.horizontal, 14)
+        .padding(.bottom, 4)
     }
 
     private func mapFooter(showsRadius: Bool) -> some View {
@@ -253,8 +265,8 @@ struct SitesView: View {
                     }
                 }
             }
-            .padding(10)
-            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .padding(8)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10, style: .continuous))
 
             Spacer()
 
@@ -263,15 +275,14 @@ struct SitesView: View {
                 fitCamera(animated: true)
             } label: {
                 Image(systemName: "location.fill")
-                    .font(.body.weight(.semibold))
+                    .font(.subheadline.weight(.semibold))
                     .foregroundStyle(Palette.accent)
-                    .frame(width: 46, height: 46)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .frame(width: 40, height: 40)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
             .accessibilityLabel(scope == .nearby ? "Show nearby sites" : "Show all of Florida")
         }
-        .padding(.horizontal)
     }
 
     // MARK: Ranked panel
@@ -279,77 +290,88 @@ struct SitesView: View {
     private func rankedPanel(_ listing: Listing) -> some View {
         VStack(spacing: 0) {
             panelHeader(listing)
-
             ScrollView {
                 LazyVStack(spacing: 0) {
-                    if scope == .nearby, search.isEmpty {
-                        severeElsewhereCard
-                    }
                     if listing.primary.isEmpty {
-                        Text("No sites match.")
-                            .foregroundStyle(Palette.secondaryText)
-                            .padding(.top, 30)
+                        if store.isLoading && store.sites.isEmpty {
+                            ProgressView()
+                                .padding(.top, 28)
+                        } else {
+                            Text(store.sites.isEmpty ? "Sites will appear here." : "No sites match.")
+                                .font(.subheadline)
+                                .foregroundStyle(Palette.secondaryText)
+                                .padding(.top, 24)
+                        }
                     }
                     siteRows(listing.primary, rankOffset: 0)
-
-                    if !listing.bands.isEmpty {
+                    if panelExpanded, !listing.bands.isEmpty {
                         moreSites(listing.bands, rankOffset: listing.primary.count)
                     }
                 }
-                .padding(.top, 4)
-                .padding(.bottom, 12)
+                .padding(.bottom, 10)
                 .animation(.default, value: listing.primary.map(\.id))
-            }        }
-        .readableWidth()
+            }
+            .scrollBounceBehavior(.basedOnSize)
+        }
         .background(
             Palette.card,
-            in: UnevenRoundedRectangle(topLeadingRadius: 26, topTrailingRadius: 26, style: .continuous))
-        .shadow(color: .black.opacity(0.4), radius: 14, y: -4)
+            in: UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20, style: .continuous))
+        .shadow(color: .black.opacity(0.35), radius: 10, y: -3)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Risk near you")
     }
 
     private func panelHeader(_ listing: Listing) -> some View {
-        VStack(spacing: 10) {
-            VStack(spacing: 10) {
-                Capsule()
-                    .fill(Color.white.opacity(0.3))
-                    .frame(width: 40, height: 5)
-                    .padding(.top, 8)
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(listing.title).font(.title3.weight(.bold))
-                        Text(panelSubtitle(listing))
-                            .font(.caption)
-                            .foregroundStyle(Palette.secondaryText)
-                            .lineLimit(1)
-                    }
-                    Spacer()
+        VStack(spacing: 8) {
+            Capsule()
+                .fill(Color.white.opacity(0.28))
+                .frame(width: 36, height: 4)
+                .padding(.top, 8)
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(scope == .nearby && search.isEmpty ? "Risk near you" : listing.title)
+                        .font(.headline)
+                    Text(panelSubtitle(listing))
+                        .font(.caption)
+                        .foregroundStyle(Palette.secondaryText)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+                }
+                Spacer(minLength: 8)
+                if panelExpanded {
                     Menu {
                         Picker("Sort by", selection: $sort) {
                             ForEach(Sort.allCases, id: \.self) { Text($0.rawValue) }
                         }
                     } label: {
                         Image(systemName: "arrow.up.arrow.down")
-                            .font(.subheadline.weight(.semibold))
+                            .font(.caption.weight(.semibold))
                             .foregroundStyle(.white)
-                            .frame(width: 36, height: 36)
+                            .frame(width: 32, height: 32)
                             .background(Palette.raised, in: Circle())
                     }
                 }
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(Palette.tertiaryText)
+                    .rotationEffect(.degrees(panelExpanded ? 180 : 0))
             }
             .contentShape(Rectangle())
             .onTapGesture { panelExpanded.toggle() }
-            .gesture(DragGesture(minimumDistance: 12).onEnded { value in
-                if value.translation.height < -30 { panelExpanded = true }
-                if value.translation.height > 30 { panelExpanded = false }
+            .gesture(DragGesture(minimumDistance: 10).onEnded { value in
+                if value.translation.height < -24 { panelExpanded = true }
+                if value.translation.height > 24 { panelExpanded = false }
             })
 
-            Picker("Scope", selection: $scope) {
-                ForEach(Scope.allCases, id: \.self) { Text($0.rawValue) }
+            if panelExpanded {
+                Picker("Scope", selection: $scope) {
+                    ForEach(Scope.allCases, id: \.self) { Text($0.rawValue) }
+                }
+                .pickerStyle(.segmented)
             }
-            .pickerStyle(.segmented)
         }
-        .padding(.horizontal, 18)
-        .padding(.bottom, 6)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 4)
     }
 
     private func panelSubtitle(_ listing: Listing) -> String {
@@ -527,11 +549,12 @@ private struct SiteSearchField: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass").foregroundStyle(Palette.secondaryText)
-            TextField("Search \(siteCount) sites by name or county", text: $text)
+            TextField("Search sites", text: $text)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
                 .onSubmit { query = text }
+                .accessibilityHint("Search \(siteCount) sites by name or county")
             if !text.isEmpty {
                 Button {
                     text = ""
@@ -541,9 +564,9 @@ private struct SiteSearchField: View {
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .frame(height: 46)
-        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .padding(.horizontal, 12)
+        .frame(height: 40)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         .task(id: text) {
             try? await Task.sleep(for: .milliseconds(150))
             guard !Task.isCancelled, query != text else { return }
@@ -728,10 +751,9 @@ private struct RankedSiteRow: View {
                     .accessibilityLabel("Lightning hold active")
             }
             RiskBadge(index: site.hazardIndex)
-            Image(systemName: "chevron.right").font(.caption.weight(.bold)).foregroundStyle(Palette.tertiaryText)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
     }
 

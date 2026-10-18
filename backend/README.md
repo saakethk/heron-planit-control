@@ -2,7 +2,7 @@
 
 The CrewSafe backend follows the layers in the backend architecture doc: intake, processing, storage, and API. It serves the exact REST and WebSocket contract the iOS app uses.
 
-Out of the box it runs on **dummy data that goes through the real pipeline**. Simulated weather, NWS alerts, and lightning are published to the raw topics, then cleaned, scored by a stand-in model, turned into alerts, stored, and served. Moving to real data and the trained model means changing settings and adapters, not the API or the app.
+Out of the box (`DATA_SOURCE=real`) it reads **live weather, alerts, and lightning** and scores every site with the pipeline's trained classifier. Open-Meteo current conditions and daily aggregates, NWS county alerts (matched by SAME codes), and NOAA GOES-19 GLM flashes feed the same topics the dummy world uses. `DATA_SOURCE=dummy` is the offline simulated world for demos and tests.
 
 ## Quick start
 
@@ -14,7 +14,21 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 
 - Interactive docs: http://localhost:8000/docs
 - Health: http://localhost:8000/api/v1/health
-- Startup takes about 4 seconds. It seeds 346 EIA plants and backfills 8 hours of history.
+- First response is immediate. Live Open-Meteo is paced to the free-tier per-minute limit, so all 346 sites fill in over about a minute. It seeds the EIA plants from `pipeline/data/incidents.db` (with FEMA flood zones) and backfills the index chart from Open-Meteo's hourly history.
+
+### Simulate from the server prompt
+
+With the server running, type commands in another terminal. They go through the same pipeline as live weather, so the app updates and notifies.
+
+```bash
+.venv/bin/python -m crewsafe.prompt
+# or one shot:
+.venv/bin/python -m crewsafe.prompt "lightning at 664"
+.venv/bin/python -m crewsafe.prompt "flood at Turkey Point"
+.venv/bin/python -m crewsafe.prompt briefing
+```
+
+`simulate>` lightning · flood · heat · briefing · clear. You can name a site (`at Turkey Point`) or an EIA id (`664`). Default is John R Kelly (664).
 
 ### Run the app against the backend
 
@@ -35,13 +49,15 @@ Each folder maps to a layer in the architecture doc:
 
 ```
 crewsafe/
-  config.py                 settings from env / .env
+  config.py                 settings from env / .env (DATA_SOURCE=real|dummy)
+  pipeline_bridge.py        read-only access to pipeline/ (sites, FEMA, trained model)
   contracts/                FROZEN CONTRACTS
     api.py                    REST + WebSocket JSON (mirrors frontend/ios/CrewSafe/Models/Models.swift)
     events.py                 messages on the bus (one model per Kafka topic)
   ingestion/                LAYER 1: intake
-    sources/open_meteo.py     real: Open-Meteo forecast API (batched, imperial units)
-    sources/nws.py            real: api.weather.gov active alerts for FL
+    sources/open_meteo.py     real: Open-Meteo (current + daily/soil model inputs, paced)
+    sources/nws.py            real: api.weather.gov active alerts for FL (SAME county codes)
+    sources/glm.py            real: NOAA GOES-19 GLM flashes from the public S3 bucket
     sources/dummy.py          dummy world: Open-Meteo-shaped weather, NWS-style alerts, moving storm cells
     poller.py                 fetch on intervals -> raw.weather, raw.nws.alerts, raw.lightning
   messaging/                Kafka topics + bus
@@ -52,7 +68,7 @@ crewsafe/
     features.py               SHARED FEATURE MODULE (training and serving import this)
     transformer.py            validate, normalize, dedupe (site_id, obs_time), derive, flag stale
     lightning.py              30-min stop-work timer on the server: holds start / extend / clear
-    scoring/model.py          MODEL ADAPTER: DummyHazardModel now, LightGBMHazardModel ready
+    scoring/model.py          MODEL ADAPTER: PipelineHazardModel (default), DummyHazardModel, LightGBMHazardModel
     scoring/rules.py          heat + wildlife rules, crew-report adjustments, compound index, factor text
     scoring/service.py        features -> model -> rules -> hazard.scores
     alerts/service.py         hysteresis, cooldowns, targeting, decision log
@@ -62,7 +78,7 @@ crewsafe/
     repository.py             the storage interface everything uses
     memory.py                 in-memory implementation (demo, tests)
     postgres.py + schema.sql  Postgres implementation and tables
-    seed/                     346 plants (florida_sites.json) + demo history
+    seed/                     346 plants from pipeline/data/incidents.db (FEMA join) or florida_sites.json
   api/                      LAYER 4: API
     main.py                   app factory; in local mode it also runs the pipeline
     routes/                   one file per resource
@@ -96,7 +112,7 @@ Two run modes share the same code:
 
 | Method and path | Purpose | Used by the app today |
 |---|---|---|
-| `GET /health` | Status, model version, scored sites, active holds | |
+| `GET /health` | Status, model version, scored sites, data sources, stale sites | |
 | `POST /auth/login` | JWT for `supervisor` / `crew` | |
 | `GET /sites?view=full\|summary&site_ids=` | All sites with index, factors, conditions, today's history; ETag | Yes |
 | `GET /sites/nearby?lat=&lon=&limit=25&offset=` | Sites by distance; `X-Total-Count` | |
@@ -109,6 +125,7 @@ Two run modes share the same code:
 | `GET /briefings/next-day?site_ids=` | 6 PM outlook; defaults to the caller's followed sites | Yes |
 | `GET /reports`, `POST /reports` | Crew reports; JSON with base64 `photo_jpeg`; idempotent on `id` | Yes |
 | `POST /devices` | APNs token | Yes |
+| `POST /simulate` | Inject lightning / heat / flood / briefing / clear (`kind` or a `prompt` string) | Yes |
 | `PUT /me/subscription` | Location, home site, followed sites (204) | Yes |
 | `GET /decision-log` | Why each alert was sent or suppressed (supervisor) | |
 
@@ -135,26 +152,25 @@ Also sent, and ignored by the app for now: `subscribed`, `lightning_hold_updated
 
 On reconnect with `last_seq`, the server replays missed events from a buffer of the last 2,000 events. If the gap is older than that, it sends `resync_required`.
 
-## Plugging in the real model and data
+## Live data (default) and what is still a stub
 
-Each step is independent:
+`DATA_SOURCE=real` (the default) already wires:
 
-1. **Model.** Train in `model/` using `crewsafe.processing.features.build_features` and `FEATURE_COLUMNS`, so training and serving use the same features.
-   - Save one LightGBM booster per hazard as `models/hazard_lgbm/<hazard>.txt`. The hazards are `lightning`, `flood`, `soil_saturation`, and `wildfire`. Add an optional `VERSION` file.
-   - Set `MODEL_KIND=lightgbm`.
-   - Using a different library means writing one class with `version` and `predict(features) -> {hazard: HazardPrediction}` in `scoring/model.py`.
-   - Heat and wildlife are scored by rules in `scoring/rules.py`. Remove a hazard from the rules once the model covers it.
-2. **Weather.** Set `WEATHER_SOURCE=open-meteo`. The payload shape is already what the transformer parses.
-   - Drought index (KBDI), river gauges, and tides currently come from the dummy `extras` block. Add sources for them, then map them in `transformer.normalize_open_meteo`.
-3. **NWS alerts.** Set `ALERT_SOURCE=nws` and a real `NWS_USER_AGENT`. The transformer matches alert polygons to site coordinates.
-4. **Lightning.** Implement `LightningSource.fetch()` for the licensed feed (Vaisala, Earth Networks, or Xweather) and select it in `ingestion/sources/__init__.py`. Set `LIGHTNING_SOURCE=none` to turn the dummy off.
-5. **Site layer.** Replace the placeholder `coastal`, `near_river`, `elevation_ft`, and `wildlife_habitat` values in `storage/seed/__init__.py` with GIS joins (FEMA, USGS, NLD).
-6. **Storage.** Set `STORAGE=postgres` and `DATABASE_URL` in `.env`, then load the tables once with `psql "$DATABASE_URL" -f crewsafe/storage/schema.sql`.
-7. **Push.** Implement `PushSender` with APNs, plus SMS fallback, in `processing/alerts/delivery.py`. `apns_payload()` already builds the body.
-8. **Auth.** Set `AUTH_REQUIRED=true` and a real `JWT_SECRET` once the app has a login screen.
-9. **Photos.** `routes/reports.py::_save_photo` writes to local disk. Swap it for S3 or GCS uploads.
+1. **Model.** `pipeline/model/artifacts/best_hazard_model.joblib`, a `RandomForestClassifier` trained on Open-Meteo archive days plus FEMA fields. Scores are `10 * P(hazard) / (P(hazard) + P(None))`, then scaled by a plausibility gate (heat needs a hot day, flood needs rain, lightning needs showers/CAPE, wildfire needs dry air). Deterministic floors still apply: GLM flash within 10/30 mi, thunderstorm at the site, heat index ≥ 105/115°F, ≥ 25 mm rain in a FEMA floodplain.
+2. **Weather.** Open-Meteo forecast API. Current conditions (imperial, every `WEATHER_INTERVAL`) plus daily aggregates and soil layers the model was trained on (metric, every `MODEL_INPUTS_INTERVAL` or at the UTC day rollover). Sites share a location on a `WEATHER_GRID_DEG` grid (0.1° ≈ 223 points). Free-tier requests are paced to 500 weighted calls/minute. Set `OPEN_METEO_API_KEY` to use the paid host and drop the cap.
+3. **NWS alerts.** `api.weather.gov` active Florida alerts (`status=actual`). Beach/marine products are dropped. Most alerts have no polygon; the transformer matches SAME county codes (`012001` = Alachua) to each site's county.
+4. **Lightning.** NOAA GOES-19 GLM L2 flashes from the public `noaa-goes19` S3 bucket, thinned to one flash per 0.04° cell. Both in-cloud and cloud-to-ground count for the 10-mile stop-work rule.
+5. **Site layer.** EIA-860M plants from `pipeline/data/incidents.db`, joined to FEMA NFHL flood zones (`flood_zone`, SFHA, coastal, risk score). The app shows the zone on the site detail screen.
 
-Regenerate the plant list with `frontend/ios/scripts/export_sites.py`. It writes both the app copy and `crewsafe/storage/seed/florida_sites.json`.
+Still not live (dummy-only or unused):
+
+- Keetch-Byram drought index, USGS river stage, and NOAA tides. The dummy world's `extras` block still supplies them; live mode leaves them unset and the model/rules fall back to defaults.
+- Licensed CG lightning (Vaisala / Earth Networks / Xweather) if you need cloud-to-ground only. Plug a `LightningSource` into `ingestion/sources/__init__.py`.
+- Postgres, Kafka, APNs/SMS, login. Same as before: `STORAGE=postgres`, `PIPELINE_MODE=kafka`, implement `PushSender`, set `AUTH_REQUIRED=true`.
+
+Switch the whole stack to the offline demo with `DATA_SOURCE=dummy`. Override one feed with `WEATHER_SOURCE`, `ALERT_SOURCE`, `LIGHTNING_SOURCE`, or `MODEL_KIND`.
+
+Regenerate the plant list with `frontend/ios/scripts/export_sites.py`. It writes both the app copy and `crewsafe/storage/seed/florida_sites.json` (used only if the pipeline database is missing).
 
 ## Differences from the architecture doc
 
@@ -171,7 +187,7 @@ The layers, the topic flow, and the reliability rules follow the doc. There is n
 ## Status
 
 - **Verified:**
-  - Local mode end to end: 15 pytest tests pass.
-  - The app's Swift models decode every response (`tools/ios_contract_check`).
-  - The iOS app runs against this server in the simulator with `-useLiveBackend YES`.
-- **Written but not yet run:** Kafka mode, `PostgresRepository`, the Open-Meteo and NWS clients, and the LightGBM adapter. They need a Kafka broker, a Postgres database, network access, and a trained model.
+  - Local mode end to end on dummy data (pytest) and on live Open-Meteo / NWS / GLM + the pipeline model.
+  - The app's Swift models decode every response (`tools/ios_contract_check`). Extra fields (`flood_zone`, `data_sources`) are ignored until the app is rebuilt.
+  - The iOS app runs against this server in the simulator with `-useLiveBackend YES`. Settings → Backend shows "Live API".
+- **Written but not yet run:** Kafka mode and `PostgresRepository`. They need a Kafka broker and a Postgres database.

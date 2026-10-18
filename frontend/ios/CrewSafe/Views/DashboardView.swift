@@ -11,7 +11,7 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
+                VStack(alignment: .leading, spacing: 14) {
                     header
 
                     if let site = store.homeSite {
@@ -35,7 +35,7 @@ struct DashboardView: View {
                     }
                 }
                 .padding(.horizontal)
-                .padding(.bottom, 24)
+                .padding(.bottom, 28)
                 .readableWidth()
             }
             .background(Palette.background.ignoresSafeArea())
@@ -55,7 +55,7 @@ struct DashboardView: View {
                 Text(Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()).uppercased())
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(Palette.secondaryText)
-                Text("Today").font(.largeTitle.weight(.bold))
+                Text("Today").font(.title.weight(.bold))
                 Button { showSitePicker = true } label: {
                     HStack(spacing: 5) {
                         Image(systemName: "mappin.circle.fill").foregroundStyle(Palette.accent)
@@ -66,7 +66,6 @@ struct DashboardView: View {
                     .font(.subheadline)
                 }
                 .buttonStyle(.plain)
-                LocationChip().padding(.top, 6)
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 10) {
@@ -107,8 +106,10 @@ struct DashboardView: View {
     private func otherHoldsRow(_ holds: [LightningHold], now: Date) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "cloud.bolt.fill").foregroundStyle(Palette.stopWork)
-            let names = holds.map { "\(store.siteName(for: $0.siteId)) \($0.remaining(at: now).countdown)" }
-            Text("Also on hold: \(Text(names.joined(separator: ", ")).foregroundStyle(.white))")
+            let shown = Array(holds.prefix(2))
+            let names = shown.map { "\(store.siteName(for: $0.siteId)) \($0.remaining(at: now).countdown)" }
+            let extra = holds.count > 2 ? " +\(holds.count - 2) more" : ""
+            Text("Also on hold: \(Text(names.joined(separator: ", ")).foregroundStyle(.white))\(extra)")
                 .foregroundStyle(Palette.secondaryText)
         }
         .font(.footnote.weight(.medium))
@@ -166,8 +167,9 @@ struct DashboardView: View {
                             .foregroundStyle(Palette.tertiaryText)
                     }
                     VStack(alignment: .leading, spacing: 0) {
-                        ForEach(Array(briefing.events.enumerated()), id: \.element.id) { offset, event in
-                            BriefingEventRow(event: event, isLast: offset == briefing.events.count - 1)
+                        let events = Array(briefing.events.prefix(3))
+                        ForEach(Array(events.enumerated()), id: \.element.id) { offset, event in
+                            BriefingEventRow(event: event, isLast: offset == events.count - 1)
                         }
                     }
                     Divider().overlay(Palette.stroke)
@@ -195,14 +197,11 @@ struct DashboardView: View {
 
     private func driversCard(_ site: Site) -> some View {
         VStack(alignment: .leading, spacing: 10) {
-            SectionHeader(title: "What's driving the index") {
+            SectionHeader(title: "Drivers") {
                 Image(systemName: "sparkles").foregroundStyle(Palette.secondaryText)
             }
-            VStack(alignment: .leading, spacing: 16) {
-                ForEach(site.sortedFactors) { FactorRow(factor: $0) }
-                Text("Factor scores are the model's per-hazard contributions (0-10).")
-                    .font(.caption2)
-                    .foregroundStyle(Palette.tertiaryText)
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(Array(site.sortedFactors.prefix(3))) { FactorRow(factor: $0) }
             }
             .card()
         }
@@ -221,7 +220,7 @@ struct DashboardView: View {
                 if store.alerts.isEmpty {
                     Text("No alerts right now.").foregroundStyle(Palette.secondaryText)
                 } else {
-                    let recent = Array(store.alerts.prefix(4))
+                    let recent = Array(store.alerts.prefix(3))
                     ForEach(recent) { alert in
                         AlertRow(
                             alert: alert, siteName: store.siteName(for: alert.siteId),
