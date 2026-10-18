@@ -1,6 +1,6 @@
 # Backend
 
-The CrewSafe backend follows the layers in the backend architecture doc: intake, processing, storage, and API. It serves the exact REST and WebSocket contract the iOS app uses.
+The Heron backend follows the layers in the backend architecture doc: intake, processing, storage, and API. It serves the exact REST and WebSocket contract the iOS app uses.
 
 Out of the box (`DATA_SOURCE=real`) it reads **live weather, alerts, and lightning** and scores every site with the pipeline's trained classifier. Open-Meteo current conditions and daily aggregates, NWS county alerts (matched by SAME codes), and NOAA GOES-19 GLM flashes feed the same topics the dummy world uses. `DATA_SOURCE=dummy` is the offline simulated world for demos and tests.
 

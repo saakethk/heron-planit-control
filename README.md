@@ -1,4 +1,4 @@
-# 🪶 Heron (CrewSafe)
+# 🪶 Heron
 ### Real-Time Environmental Intelligence & Worker Safety Platform for Florida Utility Field Crews
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-3776AB?style=flat&logo=python&logoColor=white)](https://python.org)
@@ -47,7 +47,7 @@ Electric utility linemen, power plant operators, and field service crews operate
 Today, field crews rely on consumer weather applications that only report city-wide forecasts hours late. These applications lack site-specific geotechnical awareness (e.g., whether a substation sits in a regulatory 100-year FEMA floodway or has saturated soil) and fail to enforce mandatory **OSHA stop-work safety mandates**.
 
 ### The Heron Solution
-**Heron (CrewSafe)** is an environmental intelligence and worker safety ecosystem that actively monitors **346 EIA-860M Florida electric power generation and substation sites** across all 67 Florida counties.
+**Heron** is an environmental intelligence and worker safety ecosystem that actively monitors **346 EIA-860M Florida electric power generation and substation sites** across all 67 Florida counties.
 
 Heron fuses high-frequency telemetry from orbital weather satellites, ground meteorological networks, and geotechnical hydrological models into a calibrated **Multi-Hazard Machine Learning Model**. The system computes a continuous, calibrated **0–10 Hazard Index** for every facility in Florida and streams instantaneous, life-saving stop-work directives directly to field crews' iPhones via native SwiftUI and WebSockets.
 

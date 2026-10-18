@@ -1,7 +1,7 @@
 # Frontend
 Contains the main code for the frontend of swamphacks.
 
-The iOS app, **CrewSafe**, lives in [`ios/`](ios). It is native Swift and SwiftUI, targets iOS 17+, and is built with Xcode. The development roadmap and tooling decisions are in [`PLAN.md`](PLAN.md).
+The iOS app, **Heron**, lives in [`ios/`](ios). It is native Swift and SwiftUI, targets iOS 17+, and is built with Xcode. The development roadmap and tooling decisions are in [`PLAN.md`](PLAN.md).
 
 ## Running the scaffold
 
