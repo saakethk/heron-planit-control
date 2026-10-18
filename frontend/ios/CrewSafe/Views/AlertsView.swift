@@ -67,28 +67,63 @@ struct AlertsView: View {
     }
 
     private var header: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Alerts").font(.title.weight(.bold))
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("HAZARD NOTIFICATIONS")
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.8)
+                        .foregroundStyle(Palette.secondaryText)
+                    HStack(spacing: 8) {
+                        Text("Alerts")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                        if store.unacknowledgedCount > 0 {
+                            Text("\(store.unacknowledgedCount) NEW")
+                                .font(.system(size: 10, weight: .heavy))
+                                .tracking(0.5)
+                                .foregroundStyle(Palette.accent)
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3)
+                                .background(Palette.accent.opacity(0.15), in: Capsule())
+                        }
+                    }
+                }
+
                 Spacer()
-                Button("Mark all read") { store.acknowledgeAll() }
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(store.unacknowledgedCount == 0 ? Palette.tertiaryText : Palette.accent)
-                    .disabled(store.unacknowledgedCount == 0)
+
+                if store.unacknowledgedCount > 0 {
+                    Button {
+                        store.acknowledgeAll()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark.circle")
+                                .font(.caption.weight(.bold))
+                            Text("Mark All Read")
+                                .font(.caption.weight(.semibold))
+                        }
+                        .foregroundStyle(Palette.accent)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Palette.accent.opacity(0.12), in: Capsule())
+                    }
                     .buttonStyle(.plain)
+                }
             }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
                     ForEach(Filter.allCases, id: \.self) { option in
                         let count = store.alerts.filter { matches($0, option) }.count
                         FilterChip(
-                            title: option == .all ? option.rawValue : "\(option.rawValue) \(count)",
+                            title: option == .all ? option.rawValue : "\(option.rawValue) (\(count))",
                             isSelected: filter == option
                         ) { filter = option }
                     }
                 }
             }
         }
+        .padding(.bottom, 6)
     }
 
     private func row(_ alert: HazardAlert) -> some View {
@@ -100,13 +135,25 @@ struct AlertsView: View {
             AlertRow(alert: alert, siteName: store.siteName(for: alert.siteId), acknowledged: acknowledged)
                 .padding(14)
                 .background(
-                    alert.severity == .stopWork && !acknowledged ? Palette.stopWork.opacity(0.1) : Palette.card,
-                    in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    alert.severity == .stopWork && !acknowledged
+                        ? Palette.stopWork.opacity(0.12)
+                        : Palette.card,
+                    in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(
+                            !acknowledged
+                                ? alert.severity.color.opacity(0.35)
+                                : Palette.cardBorder,
+                            lineWidth: 1
+                        )
+                )
                 .overlay(alignment: .leading) {
                     if !acknowledged {
                         UnevenRoundedRectangle(topLeadingRadius: 16, bottomLeadingRadius: 16, style: .continuous)
                             .fill(alert.severity.color)
-                            .frame(width: 4)
+                            .frame(width: 3.5)
                     }
                 }
                 .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
@@ -116,7 +163,7 @@ struct AlertsView: View {
             Button("Mark as read", systemImage: "checkmark") { store.acknowledge(alertId: alert.id) }
             Button("View site", systemImage: "mappin.and.ellipse") { store.showSite(alert.siteId) }
         }
-        .swipeActions {
+        .swipeActions(edge: .leading) {
             if !acknowledged {
                 Button("Read", systemImage: "checkmark") { store.acknowledge(alertId: alert.id) }
                     .tint(Palette.live)

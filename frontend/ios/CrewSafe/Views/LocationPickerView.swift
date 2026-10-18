@@ -81,7 +81,7 @@ struct LocationPickerView: View {
                             .foregroundStyle(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(Palette.accent.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .background(Palette.accentGradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
                     .buttonStyle(.plain)
                     .padding(.horizontal)

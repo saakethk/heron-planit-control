@@ -315,8 +315,12 @@ struct SitesView: View {
         }
         .background(
             Palette.card,
-            in: UnevenRoundedRectangle(topLeadingRadius: 20, topTrailingRadius: 20, style: .continuous))
-        .shadow(color: .black.opacity(0.35), radius: 10, y: -3)
+            in: UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24, style: .continuous))
+        .overlay(
+            UnevenRoundedRectangle(topLeadingRadius: 24, topTrailingRadius: 24, style: .continuous)
+                .stroke(Palette.cardBorder, lineWidth: 1)
+        )
+        .shadow(color: .black.opacity(0.45), radius: 16, y: -4)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Risk near you")
     }
@@ -727,33 +731,48 @@ private struct RankedSiteRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Text("\(rank)")
-                .font(.subheadline.weight(.semibold).monospacedDigit())
+                .font(.caption.weight(.bold).monospacedDigit())
                 .foregroundStyle(Palette.tertiaryText)
-                .frame(width: 26)
+                .frame(width: 22)
+
             RoundedRectangle(cornerRadius: 2)
                 .fill(site.riskLevel.color)
-                .frame(width: 4, height: 38)
+                .frame(width: 3.5, height: 36)
+
             VStack(alignment: .leading, spacing: 3) {
-                Text(site.name).font(.body.weight(.semibold)).foregroundStyle(.white).lineLimit(1)
-                HStack(spacing: 4) {
+                Text(site.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+
+                HStack(spacing: 5) {
                     if let top = site.topFactor {
-                        Image(systemName: top.type.symbol).foregroundStyle(top.type.color)
+                        Image(systemName: top.type.symbol)
+                            .font(.caption2)
+                            .foregroundStyle(top.type.color)
                     }
-                    Text(detail).lineLimit(1)
+                    Text(detail)
+                        .lineLimit(1)
                 }
                 .font(.caption)
                 .foregroundStyle(Palette.secondaryText)
             }
+
             Spacer(minLength: 6)
+
             if hold != nil {
-                Image(systemName: "cloud.bolt.fill")
-                    .foregroundStyle(Palette.stopWork)
+                Image(systemName: "bolt.fill")
+                    .font(.caption.weight(.bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 22, height: 22)
+                    .background(Palette.stopWork, in: Circle())
                     .accessibilityLabel("Lightning hold active")
             }
+
             RiskBadge(index: site.hazardIndex)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
         .contentShape(Rectangle())
     }
 

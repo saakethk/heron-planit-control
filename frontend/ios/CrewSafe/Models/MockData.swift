@@ -176,11 +176,11 @@ enum MockData {
     static var activeHolds: [LightningHold] {
         [
             LightningHold(
-                siteId: 664, startedAt: .now.addingTimeInterval(-6 * 60), lastStrikeAt: .now.addingTimeInterval(-140),
+                siteId: 664, startedAt: .now.addingTimeInterval(-6.0 * 60), lastStrikeAt: .now.addingTimeInterval(-140.0),
                 strikeCount: 2, closestMiles: 6.1, lastDistanceMiles: 6.1, lastDirection: "SW",
                 allClearInterval: LightningPolicy.allClearInterval),
             LightningHold(
-                siteId: 617, startedAt: .now.addingTimeInterval(-9 * 60), lastStrikeAt: .now.addingTimeInterval(-106),
+                siteId: 617, startedAt: .now.addingTimeInterval(-9.0 * 60), lastStrikeAt: .now.addingTimeInterval(-106.0),
                 strikeCount: 3, closestMiles: 3.1, lastDistanceMiles: 4.2, lastDirection: "NE",
                 allClearInterval: LightningPolicy.allClearInterval),
         ]
@@ -194,37 +194,37 @@ enum MockData {
                 id: "seed-gnv-hold", siteId: 664, type: .lightning, severity: .stopWork,
                 title: "Stop work: lightning 6.1 mi away",
                 message: "Strike SW, moving NE. Shelter in trucks or the control room. All clear in 30:00 if there are no more strikes.",
-                issuedAt: .now.addingTimeInterval(-140), acknowledged: false, source: "Lightning network"),
+                issuedAt: .now.addingTimeInterval(-140.0), acknowledged: false, source: "Lightning network"),
             HazardAlert(
                 id: "seed-gnv-gator", siteId: 664, type: .wildlife, severity: .advisory,
                 title: "Alligator at the cooling pond",
                 message: "About 6 ft alligator on the south bank. Keep 30 ft away and use the north gate.",
-                issuedAt: .now.addingTimeInterval(-55 * 60), acknowledged: true, source: "Crew report"),
+                issuedAt: .now.addingTimeInterval(-55.0 * 60), acknowledged: true, source: "Crew report"),
             HazardAlert(
                 id: "seed-hold-extended", siteId: 617, type: .lightning, severity: .stopWork,
                 title: "Stop work: lightning 4.2 mi away",
                 message: "Strike NE, moving SW. Shelter now. All clear in 30:00 if there are no more strikes.",
-                issuedAt: .now.addingTimeInterval(-106), acknowledged: false, source: "Lightning network"),
+                issuedAt: .now.addingTimeInterval(-106.0), acknowledged: false, source: "Lightning network"),
             HazardAlert(
                 id: "seed-hold-start", siteId: 617, type: .lightning, severity: .stopWork,
                 title: "Stop work: lightning 6.8 mi away",
                 message: "First strike within 10 mi. Stop work and move to trucks or the control building.",
-                issuedAt: .now.addingTimeInterval(-9 * 60), acknowledged: false, source: "Lightning network"),
+                issuedAt: .now.addingTimeInterval(-9.0 * 60), acknowledged: false, source: "Lightning network"),
             HazardAlert(
                 id: "seed-flood", siteId: 627, type: .flood, severity: .warning,
                 title: "Flood risk after overnight rain",
                 message: "2.9 in. fell overnight. Check trench walls before entry and avoid the north vault.",
-                issuedAt: .now.addingTimeInterval(-2 * 3600), acknowledged: false, source: "NWS"),
+                issuedAt: .now.addingTimeInterval(-2.0 * 3600), acknowledged: false, source: "NWS"),
             HazardAlert(
                 id: "seed-heat", siteId: 54466, type: .heat, severity: .warning,
                 title: "Extreme heat: mandatory rest cycles",
                 message: "Heat index reaches 111°F at 2 PM. 15-minute shaded rest every 45 minutes.",
-                issuedAt: .now.addingTimeInterval(-75 * 60), acknowledged: true, source: "Hazard model"),
+                issuedAt: .now.addingTimeInterval(-75.0 * 60), acknowledged: true, source: "Hazard model"),
             HazardAlert(
                 id: "seed-gator", siteId: 56518, type: .wildlife, severity: .advisory,
                 title: "Alligator sighting",
                 message: "About 7 ft alligator near the retention pond fence. Keep 30 ft away.",
-                issuedAt: .now.addingTimeInterval(-40 * 60), acknowledged: true, source: "Crew report"),
+                issuedAt: .now.addingTimeInterval(-40.0 * 60), acknowledged: true, source: "Crew report"),
             HazardAlert(
                 id: "seed-tide", siteId: 617, type: .flood, severity: .advisory,
                 title: "King tide at 11:20 AM",
@@ -239,17 +239,17 @@ enum MockData {
                 id: "seed-soil", siteId: 627, type: .soilSaturation, severity: .advisory,
                 title: "Soil saturation high",
                 message: "Soil moisture is 94%. Shore excavations deeper than 5 ft.",
-                issuedAt: .now.addingTimeInterval(-4 * 3600), acknowledged: true, source: "Open-Meteo"),
+                issuedAt: .now.addingTimeInterval(-4.0 * 3600), acknowledged: true, source: "Open-Meteo"),
             HazardAlert(
                 id: "seed-smoke", siteId: 136, type: .wildfire, severity: .advisory,
                 title: "Smoke advisory",
                 message: "Prescribed burn 8 mi upwind. Expect reduced air quality until evening.",
-                issuedAt: .now.addingTimeInterval(-26 * 3600), acknowledged: true, source: "Florida Forest Service"),
+                issuedAt: .now.addingTimeInterval(-26.0 * 3600), acknowledged: true, source: "Florida Forest Service"),
             HazardAlert(
                 id: "seed-riviera-heat", siteId: 619, type: .heat, severity: .warning,
                 title: "Heat advisory",
                 message: "Heat index 104°F expected. Add a water break every 20 minutes.",
-                issuedAt: .now.addingTimeInterval(-28 * 3600), acknowledged: true, source: "NWS"),
+                issuedAt: .now.addingTimeInterval(-28.0 * 3600), acknowledged: true, source: "NWS"),
         ]
     }
 
@@ -268,7 +268,7 @@ enum MockData {
                           time: .now, isActive: true),
                     .init(id: "gnv-gator", type: .wildlife, title: "Alligator at the cooling pond",
                           detail: "Use the north gate and keep 30 ft from the south bank.",
-                          time: .now.addingTimeInterval(-55 * 60), isActive: false),
+                          time: .now.addingTimeInterval(-55.0 * 60), isActive: false),
                     .init(id: "gnv-heat", type: .heat, title: "Heat index peaks at 104°F",
                           detail: "Rest 15 min in shade every 45 min. Drink water every 15-20 min.",
                           time: clock(15, 0), isActive: false),
@@ -295,7 +295,7 @@ enum MockData {
                 tomorrowOutlook: "storms 1-6 PM")
         }
 
-        let offsets: [TimeInterval] = [0, 2 * 3600, 4 * 3600]
+        let offsets: [TimeInterval] = [0, 2.0 * 3600, 4.0 * 3600]
         let events = site.sortedFactors.prefix(3).enumerated().map { offset, factor in
             SiteBriefing.Event(
                 id: "\(site.id)-\(factor.type.rawValue)", type: factor.type, title: factor.detail,
@@ -308,7 +308,7 @@ enum MockData {
             siteId: site.id,
             headline: "\(site.riskLevel.label) risk today, driven mostly by \(top).",
             sources: ["NWS", "Open-Meteo", "hazard model"],
-            updatedAt: .now.addingTimeInterval(-20 * 60),
+            updatedAt: .now.addingTimeInterval(-20.0 * 60),
             events: events,
             tomorrowOutlook: briefing.items.first { $0.siteId == site.id }?.headline.lowercased() ?? "similar conditions")
     }
@@ -344,15 +344,15 @@ enum MockData {
     static var reports: [CrewReport] {
         [
             CrewReport(id: "rep-gnv", siteId: 664, type: .wildlife, notes: "About 6 ft alligator on the south bank of the cooling pond.",
-                       reporter: "D. Nguyen", createdAt: .now.addingTimeInterval(-55 * 60)),
+                       reporter: "D. Nguyen", createdAt: .now.addingTimeInterval(-55.0 * 60)),
             CrewReport(id: "rep-1", siteId: 56518, type: .wildlife, notes: "About 7 ft alligator near the retention pond fence.",
-                       reporter: "J. Alvarez", createdAt: .now.addingTimeInterval(-40 * 60)),
+                       reporter: "J. Alvarez", createdAt: .now.addingTimeInterval(-40.0 * 60)),
             CrewReport(id: "rep-2", siteId: 54466, type: .heat, notes: "Shade tent at the cooling tower blew over. Crew has no shade.",
-                       reporter: "T. Brooks", createdAt: .now.addingTimeInterval(-62 * 60)),
+                       reporter: "T. Brooks", createdAt: .now.addingTimeInterval(-62.0 * 60)),
             CrewReport(id: "rep-3", siteId: 627, type: .flood, notes: "Standing water about 8 in. deep at the north vault.",
                        reporter: "M. Chen", createdAt: .now.addingTimeInterval(-2.5 * 3600)),
             CrewReport(id: "rep-4", siteId: 617, type: .other, notes: "Fence panel down at the east dock gate.",
-                       reporter: "R. Patel", createdAt: .now.addingTimeInterval(-5 * 3600)),
+                       reporter: "R. Patel", createdAt: .now.addingTimeInterval(-5.0 * 3600)),
         ]
     }
 
@@ -366,7 +366,7 @@ enum MockData {
     private static func history(siteId: Int, from start: Double, to end: Double) -> [IndexPoint] {
         let now = Date.now
         var startTime = clock(6, 0)
-        if now.timeIntervalSince(startTime) < 3 * 3600 { startTime = now.addingTimeInterval(-6 * 3600) }
+        if now.timeIntervalSince(startTime) < 3 * 3600 { startTime = now.addingTimeInterval(-6.0 * 3600) }
         let steps = max(2, Int(now.timeIntervalSince(startTime) / 1800))
         return (0...steps).map { step in
             let progress = Double(step) / Double(steps)
@@ -386,7 +386,7 @@ enum MockData {
             id: id, name: name, county: county, latitude: lat, longitude: lon, capacityMw: mw,
             hazardIndex: index,
             factors: factors.map { HazardFactor(type: $0.0, score: $0.1, detail: $0.2) },
-            updatedAt: .now.addingTimeInterval(-2 * 60),
+            updatedAt: .now.addingTimeInterval(-2.0 * 60),
             conditions: conditions,
             history: history(siteId: id, from: startIndex, to: index))
     }

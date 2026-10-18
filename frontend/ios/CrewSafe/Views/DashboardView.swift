@@ -11,7 +11,7 @@ struct DashboardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
+                VStack(alignment: .leading, spacing: 18) {
                     header
 
                     if let site = store.homeSite {
@@ -50,37 +50,68 @@ struct DashboardView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .top) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(Date.now.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()).uppercased())
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(Palette.secondaryText)
-                Text("Today").font(.title.weight(.bold))
-                Button { showSitePicker = true } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "mappin.circle.fill").foregroundStyle(Palette.accent)
-                        Text(store.homeSite.map { "\($0.name) · \($0.county) Co." } ?? "Choose your site")
-                            .foregroundStyle(Palette.secondaryText)
-                        Image(systemName: "chevron.right").font(.caption2.weight(.bold)).foregroundStyle(Palette.tertiaryText)
-                    }
-                    .font(.subheadline)
-                }
-                .buttonStyle(.plain)
-            }
-            Spacer()
-            VStack(alignment: .trailing, spacing: 10) {
-                ConnectionPill(status: store.connection, isMock: store.usesMockBackend)
-                Button { showSettings = true } label: {
-                    Image(systemName: "gearshape.fill")
-                        .font(.body)
+        VStack(spacing: 12) {
+            HStack(alignment: .center) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(Date.now.formatted(.dateTime.weekday(.wide).month(.abbreviated).day()).uppercased())
+                        .font(.system(size: 11, weight: .bold))
+                        .tracking(0.8)
                         .foregroundStyle(Palette.secondaryText)
-                        .frame(width: 36, height: 36)
-                        .background(Palette.card, in: Circle())
+                    Text("Jobsite Safety")
+                        .font(.title2.weight(.bold))
+                        .foregroundStyle(.white)
                 }
-                .accessibilityLabel("Settings")
+
+                Spacer()
+
+                HStack(spacing: 8) {
+                    ConnectionPill(status: store.connection, isMock: store.usesMockBackend)
+
+                    Button { showSettings = true } label: {
+                        Image(systemName: "gearshape")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.85))
+                            .frame(width: 34, height: 34)
+                            .background(Palette.card, in: Circle())
+                            .overlay(Circle().stroke(Palette.cardBorder, lineWidth: 1))
+                    }
+                    .accessibilityLabel("Settings")
+                }
             }
+
+            // Location Bar Pill
+            Button { showSitePicker = true } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "mappin.and.ellipse")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(Palette.accent)
+
+                    Text(store.homeSite.map { "\($0.name) · \($0.county) Co." } ?? "Select Monitored Jobsite")
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    Spacer(minLength: 4)
+
+                    Text("Change")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(Palette.accent)
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundStyle(Palette.tertiaryText)
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+                .background(Palette.card, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Palette.cardBorder, lineWidth: 1)
+                )
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.top, 8)
+        .padding(.top, 4)
     }
 
     // MARK: Lightning
@@ -92,7 +123,7 @@ struct DashboardView: View {
             let others = holds.filter { $0.siteId != site.id && store.isNearby($0.siteId) }
             VStack(spacing: 10) {
                 if let mine {
-                    StopWorkBanner(hold: mine)
+                    StopWorkBanner(hold: mine, siteName: site.name)
                         .onTapGesture { store.showSite(site.id) }
                 }
                 if !others.isEmpty {
@@ -104,18 +135,27 @@ struct DashboardView: View {
     }
 
     private func otherHoldsRow(_ holds: [LightningHold], now: Date) -> some View {
-        HStack(spacing: 8) {
-            Image(systemName: "cloud.bolt.fill").foregroundStyle(Palette.stopWork)
+        HStack(spacing: 10) {
+            Image(systemName: "cloud.bolt.fill")
+                .foregroundStyle(Palette.stopWork)
             let shown = Array(holds.prefix(2))
             let names = shown.map { "\(store.siteName(for: $0.siteId)) \($0.remaining(at: now).countdown)" }
             let extra = holds.count > 2 ? " +\(holds.count - 2) more" : ""
             Text("Also on hold: \(Text(names.joined(separator: ", ")).foregroundStyle(.white))\(extra)")
                 .foregroundStyle(Palette.secondaryText)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.caption2.weight(.bold))
+                .foregroundStyle(Palette.tertiaryText)
         }
         .font(.footnote.weight(.medium))
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
         .background(Palette.stopWork.opacity(0.12), in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .stroke(Palette.stopWork.opacity(0.25), lineWidth: 1)
+        )
         .onTapGesture { store.selectedTab = .sites }
     }
 
@@ -123,28 +163,67 @@ struct DashboardView: View {
 
     private func indexCard(_ site: Site) -> some View {
         Button { store.showSite(site.id) } label: {
-            VStack(alignment: .leading, spacing: 14) {
+            VStack(alignment: .leading, spacing: 16) {
+                // Top row: Label + Status Pill
+                HStack(alignment: .center) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "gauge.with.dots.needle.67percent")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(site.riskLevel.color)
+                        Text("COMPOSITE HAZARD INDEX")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.6)
+                            .foregroundStyle(Palette.secondaryText)
+                    }
+
+                    Spacer()
+
+                    RiskBadge(index: site.hazardIndex, large: false)
+                }
+
+                // Middle Hero Number & Status
                 HStack(alignment: .center, spacing: 16) {
-                    HStack(alignment: .firstTextBaseline, spacing: 2) {
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
                         Text(site.hazardIndex.oneDecimal)
-                            .font(.system(size: 50, weight: .bold, design: .rounded))
+                            .font(.system(size: 54, weight: .heavy, design: .rounded))
                             .foregroundStyle(site.riskLevel.color)
                             .contentTransition(.numericText(value: site.hazardIndex))
-                        Text("/10").font(.title3.weight(.semibold)).foregroundStyle(Palette.tertiaryText)
+                        Text("/ 10")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(Palette.tertiaryText)
                     }
+
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("\(site.riskLevel.label) risk").font(.title3.weight(.bold))
+                        Text("\(site.riskLevel.label) Hazard")
+                            .font(.title3.weight(.bold))
+                            .foregroundStyle(.white)
                         TrendLabel(site: site)
                     }
+
                     Spacer(minLength: 0)
-                    Image(systemName: "chevron.right").font(.footnote.weight(.bold)).foregroundStyle(Palette.tertiaryText)
+
+                    Image(systemName: "chevron.right")
+                        .font(.footnote.weight(.bold))
+                        .foregroundStyle(Palette.tertiaryText)
                 }
+
+                // Visual progress bar
                 RiskBandBar(index: site.hazardIndex)
-                Text("Hazard Index · updated \(site.updatedAt.relativeShort)")
-                    .font(.caption2)
-                    .foregroundStyle(Palette.tertiaryText)
+
+                // Footer metadata
+                HStack {
+                    Label("Model inference · updated \(site.updatedAt.relativeShort)", systemImage: "clock")
+                        .font(.caption2)
+                        .foregroundStyle(Palette.tertiaryText)
+
+                    Spacer()
+
+                    Text("View Site Details →")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(Palette.accent)
+                }
             }
-            .card()
+            .card(padding: 18, cornerRadius: 20)
         }
         .buttonStyle(.plain)
         .animation(.spring, value: site.hazardIndex)

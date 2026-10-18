@@ -34,14 +34,20 @@ struct ReportHazardView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 18) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Report").font(.title.weight(.bold))
-                        Text("Supervisors and crews at the site are notified right away.")
+                VStack(alignment: .leading, spacing: 20) {
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("CREW FIELD LOG")
+                            .font(.system(size: 11, weight: .bold))
+                            .tracking(0.8)
+                            .foregroundStyle(Palette.secondaryText)
+                        Text("Report Jobsite Hazard")
+                            .font(.title2.weight(.bold))
+                            .foregroundStyle(.white)
+                        Text("Immediately notifies control dispatch & nearby crews.")
                             .font(.subheadline)
                             .foregroundStyle(Palette.secondaryText)
                     }
-                    .padding(.top, 8)
+                    .padding(.top, 4)
 
                     typeGrid
                     siteAndLocation
@@ -109,19 +115,29 @@ struct ReportHazardView: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 10), count: 3), spacing: 10) {
             ForEach(Self.reportableTypes) { type in
                 let selected = hazardType == type
-                Button { hazardType = type } label: {
+                Button {
+                    hazardType = type
+                } label: {
                     VStack(spacing: 8) {
                         Image(systemName: type.symbol)
-                            .font(.title2)
-                            .foregroundStyle(selected ? .black : type.color)
+                            .font(.system(size: 20, weight: .semibold))
+                            .foregroundStyle(selected ? Color.white : type.color)
                         Text(type.shortName)
-                            .font(.footnote.weight(.semibold))
-                            .foregroundStyle(selected ? .black : .white)
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(selected ? Color.white : Palette.secondaryText)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(selected ? type.color : Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-                    .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(selected ? .clear : Palette.stroke))
+                    .padding(.vertical, 14)
+                    .background(
+                        selected
+                            ? AnyShapeStyle(type.color.opacity(0.85))
+                            : AnyShapeStyle(Palette.card),
+                        in: RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(selected ? Color.white.opacity(0.3) : Palette.cardBorder, lineWidth: 1)
+                    )
                 }
                 .buttonStyle(.plain)
                 .accessibilityAddTraits(selected ? .isSelected : [])
@@ -132,7 +148,9 @@ struct ReportHazardView: View {
     private var siteAndLocation: some View {
         VStack(spacing: 0) {
             HStack {
-                Label("Site", systemImage: "building.2.fill").foregroundStyle(Palette.secondaryText)
+                Label("Target Site", systemImage: "building.2.fill")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Palette.secondaryText)
                 Spacer()
                 Menu {
                     Picker("Site", selection: $siteId) {
@@ -143,25 +161,37 @@ struct ReportHazardView: View {
                         }
                     }
                 } label: {
-                    HStack(spacing: 4) {
-                        Text(store.siteName(for: siteId)).foregroundStyle(.white)
-                        Image(systemName: "chevron.up.chevron.down").font(.caption).foregroundStyle(Palette.tertiaryText)
+                    HStack(spacing: 5) {
+                        Text(store.siteName(for: siteId))
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.white)
+                        Image(systemName: "chevron.up.chevron.down")
+                            .font(.caption2.weight(.bold))
+                            .foregroundStyle(Palette.tertiaryText)
                     }
                 }
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
+
             Divider().overlay(Palette.stroke)
+
             HStack {
-                Label("Location", systemImage: "location.fill").foregroundStyle(Palette.secondaryText)
+                Label("GPS Coordinates", systemImage: "location.fill")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Palette.secondaryText)
                 Spacer()
-                Text(locationText).font(.subheadline.monospacedDigit()).foregroundStyle(.white)
+                Text(locationText)
+                    .font(.subheadline.monospacedDigit().weight(.medium))
+                    .foregroundStyle(.white)
             }
-            .padding(.vertical, 12)
+            .padding(.vertical, 14)
         }
-        .font(.subheadline)
         .padding(.horizontal, 16)
-        .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Palette.stroke))
+        .background(Palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Palette.cardBorder, lineWidth: 1)
+        )
     }
 
     @ViewBuilder
@@ -170,37 +200,46 @@ struct ReportHazardView: View {
             ProgressView()
                 .frame(maxWidth: .infinity)
                 .frame(height: 96)
-                .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                .background(Palette.card, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Palette.cardBorder, lineWidth: 1)
+                )
         } else if let photo {
             ZStack(alignment: .topTrailing) {
                 Image(uiImage: photo.preview)
                     .resizable()
                     .scaledToFill()
-                    .frame(height: 220)
+                    .frame(height: 200)
                     .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(Palette.cardBorder, lineWidth: 1)
+                    )
                 Button {
                     self.photo = nil
                     photoItem = nil
                 } label: {
                     Image(systemName: "xmark")
                         .font(.caption.weight(.bold))
-                        .frame(width: 30, height: 30)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .foregroundStyle(.white)
+                        .frame(width: 32, height: 32)
+                        .background(Color.black.opacity(0.65), in: Circle())
                 }
-                .padding(10)
+                .padding(12)
                 .accessibilityLabel("Remove photo")
             }
         } else {
-            HStack(spacing: 10) {
+            HStack(spacing: 12) {
                 if cameraAvailable {
                     Button { showCamera = true } label: {
-                        photoTile(symbol: "camera.fill", title: "Take photo")
+                        photoTile(symbol: "camera.fill", title: "Take Photo")
                     }
                     .buttonStyle(.plain)
                 }
                 PhotosPicker(selection: $photoItem, matching: .images) {
-                    photoTile(symbol: "photo.on.rectangle", title: cameraAvailable ? "Library" : "Add photo")
+                    photoTile(symbol: "photo.on.rectangle", title: cameraAvailable ? "Photo Library" : "Attach Photo")
                 }
                 .buttonStyle(.plain)
             }
@@ -209,24 +248,33 @@ struct ReportHazardView: View {
 
     private func photoTile(symbol: String, title: String) -> some View {
         VStack(spacing: 8) {
-            Image(systemName: symbol).font(.title2).foregroundStyle(Palette.accent)
-            Text(title).font(.footnote.weight(.semibold))
+            Image(systemName: symbol)
+                .font(.title3)
+                .foregroundStyle(Palette.accent)
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.white)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 16)
         .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Palette.accent.opacity(0.4), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
+                .stroke(Palette.cardBorder, lineWidth: 1)
+        )
     }
 
     private var notesSection: some View {
-        TextField("What did you see? e.g. 6 ft alligator near the substation gate",
+        TextField("Describe hazard: e.g. standing water deep at substation gate, active hornets, cracked pole",
                   text: $notes, axis: .vertical)
-            .lineLimit(3...6)
+            .font(.subheadline)
+            .lineLimit(3...5)
             .padding(14)
             .background(Palette.card, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).stroke(Palette.stroke))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(Palette.cardBorder, lineWidth: 1)
+            )
     }
 
     private var submitButton: some View {
@@ -238,14 +286,16 @@ struct ReportHazardView: View {
                     ProgressView().tint(.white)
                 } else {
                     Image(systemName: "paperplane.fill")
-                    Text("Submit \(hazardType.shortName.lowercased()) report")
+                        .font(.subheadline.weight(.bold))
+                    Text("Broadcast \(hazardType.shortName) Report")
+                        .font(.headline)
                 }
             }
-            .font(.headline)
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
-            .frame(height: 54)
-            .background(Palette.accent.gradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .frame(height: 52)
+            .background(Palette.accentGradient, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .shadow(color: Palette.accent.opacity(0.35), radius: 8, y: 3)
         }
         .buttonStyle(.plain)
         .disabled(isSubmitting || isPreparingPhoto)

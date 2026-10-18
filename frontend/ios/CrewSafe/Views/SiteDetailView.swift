@@ -30,34 +30,48 @@ struct SiteDetailView: View {
 
     @ViewBuilder
     private func content(_ site: Site) -> some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .center, spacing: 18) {
-                HazardGauge(index: site.hazardIndex, size: 96)
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("\(site.riskLevel.label) risk").font(.title2.weight(.bold))
-                    TrendLabel(site: site)
-                    Text(siteLine(site))
-                        .font(.caption)
-                        .foregroundStyle(Palette.tertiaryText)
-                    if store.homeSiteId == site.id {
-                        Label("My site", systemImage: "checkmark.circle.fill")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(Palette.accent)
+        VStack(alignment: .leading, spacing: 18) {
+            // Hero Gauge Card
+            VStack(alignment: .leading, spacing: 16) {
+                HStack(alignment: .center, spacing: 18) {
+                    HazardGauge(index: site.hazardIndex, size: 92)
+
+                    VStack(alignment: .leading, spacing: 5) {
+                        HStack(spacing: 6) {
+                            Text("\(site.riskLevel.label) Hazard")
+                                .font(.title3.weight(.bold))
+                                .foregroundStyle(.white)
+                            if store.homeSiteId == site.id {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .font(.subheadline)
+                                    .foregroundStyle(Palette.accent)
+                            }
+                        }
+
+                        TrendLabel(site: site)
+
+                        Text(siteLine(site))
+                            .font(.caption)
+                            .foregroundStyle(Palette.secondaryText)
                     }
+                    Spacer()
                 }
+
+                RiskBandBar(index: site.hazardIndex)
             }
-            .padding(.top, 8)
+            .card(padding: 18, cornerRadius: 20)
+            .padding(.top, 4)
 
             TimelineView(.periodic(from: .now, by: 1)) { context in
                 if let hold = store.activeHold(for: site.id, at: context.date) {
-                    StopWorkBanner(hold: hold)
+                    StopWorkBanner(hold: hold, siteName: site.name)
                 }
             }
 
             if let history = site.history, history.count > 1 {
                 VStack(alignment: .leading, spacing: 10) {
-                    SectionHeader(title: "Today") {
-                        Text("Hazard Index").font(.caption).foregroundStyle(Palette.secondaryText)
+                    SectionHeader(title: "Today's Trend") {
+                        Text("Hourly Inference").font(.caption).foregroundStyle(Palette.secondaryText)
                     }
                     IndexSparkline(points: history, color: site.riskLevel.color)
                         .frame(height: 112)
@@ -66,11 +80,14 @@ struct SiteDetailView: View {
             }
 
             if let conditions = site.conditions {
-                ConditionsRow(conditions: conditions)
+                VStack(alignment: .leading, spacing: 10) {
+                    SectionHeader(title: "Live Meteorological Telemetry")
+                    ConditionsRow(conditions: conditions)
+                }
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Model factors")
+                SectionHeader(title: "Model Risk Factors")
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(Array(site.sortedFactors.prefix(4))) { FactorRow(factor: $0) }
                 }
@@ -79,11 +96,13 @@ struct SiteDetailView: View {
 
             if let briefing = store.siteBriefings[site.id] {
                 VStack(alignment: .leading, spacing: 10) {
-                    SectionHeader(title: "Briefing") {
+                    SectionHeader(title: "Site Briefing") {
                         Text("Updated \(briefing.updatedAt.shortTime)").font(.caption).foregroundStyle(Palette.secondaryText)
                     }
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text(briefing.headline).font(.headline)
+                    VStack(alignment: .leading, spacing: 14) {
+                        Text(briefing.headline)
+                            .font(.headline)
+                            .foregroundStyle(.white)
                         VStack(alignment: .leading, spacing: 0) {
                             let events = Array(briefing.events.prefix(3))
                             ForEach(Array(events.enumerated()), id: \.element.id) { offset, event in
@@ -97,12 +116,14 @@ struct SiteDetailView: View {
 
             let alerts = store.alerts(for: site.id)
             VStack(alignment: .leading, spacing: 10) {
-                SectionHeader(title: "Alerts") {
+                SectionHeader(title: "Site Alerts") {
                     Text("\(alerts.count)").font(.subheadline).foregroundStyle(Palette.secondaryText)
                 }
                 VStack(alignment: .leading, spacing: 14) {
                     if alerts.isEmpty {
-                        Text("No alerts for this site.").foregroundStyle(Palette.secondaryText)
+                        Text("No active alerts for this facility.")
+                            .font(.footnote)
+                            .foregroundStyle(Palette.secondaryText)
                     }
                     ForEach(alerts.prefix(3)) { alert in
                         AlertRow(alert: alert, siteName: site.name, acknowledged: store.isAcknowledged(alert))
@@ -114,7 +135,7 @@ struct SiteDetailView: View {
             let reports = store.reports(for: site.id)
             if !reports.isEmpty {
                 VStack(alignment: .leading, spacing: 10) {
-                    SectionHeader(title: "Crew reports")
+                    SectionHeader(title: "Crew Incident Reports")
                     VStack(alignment: .leading, spacing: 14) {
                         ForEach(reports) { CrewReportRow(report: $0, siteName: nil, photo: store.localReportThumbnails[$0.id]) }
                     }
@@ -122,30 +143,50 @@ struct SiteDetailView: View {
                 }
             }
 
-            VStack(spacing: 10) {
+            VStack(spacing: 12) {
                 if store.homeSiteId != site.id {
                     Button {
                         store.setHomeSite(site.id)
                     } label: {
-                        Label("Set as my site", systemImage: "mappin.and.ellipse").frame(maxWidth: .infinity)
+                        HStack(spacing: 8) {
+                            Image(systemName: "mappin.and.ellipse")
+                            Text("Set as My Primary Site")
+                        }
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Palette.accentGradient, in: RoundedRectangle(cornerRadius: 15, style: .continuous))
                     }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
+                    .buttonStyle(.plain)
                 }
+
                 Button {
                     store.simulateLightningStrike(siteId: site.id)
                 } label: {
-                    Label("Simulate lightning strike", systemImage: "bolt.fill").frame(maxWidth: .infinity)
+                    HStack(spacing: 8) {
+                        Image(systemName: "bolt.fill")
+                        Text("Simulate Lightning (Stop Work)")
+                    }
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(Palette.stopWork)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Palette.stopWork.opacity(0.12), in: RoundedRectangle(cornerRadius: 15, style: .continuous))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 15, style: .continuous)
+                            .stroke(Palette.stopWork.opacity(0.3), lineWidth: 1)
+                    )
                 }
-                .buttonStyle(.bordered)
-                .tint(Palette.stopWork)
-                .controlSize(.large)
+                .buttonStyle(.plain)
             }
+            .padding(.top, 4)
 
-            Text("EIA plant \(site.id) · \(site.latitude.formatted()), \(site.longitude.formatted())")
+            Text("EIA Plant ID \(site.id) · \(site.latitude.rounded(toPlaces: 4)), \(site.longitude.rounded(toPlaces: 4))")
                 .font(.caption2)
                 .foregroundStyle(Palette.tertiaryText)
                 .frame(maxWidth: .infinity)
+                .padding(.top, 4)
         }
     }
 
