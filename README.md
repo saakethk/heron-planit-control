@@ -7,11 +7,6 @@
   <b>Real-Time Environmental Intelligence & Worker Safety Platform for Florida Utility Field Crews</b>
 </p>
 
-> **SwampHacks 2026 Submission**  
-> **Target Tracks:**  
-> 1. **Sperry Tech — PlanIt Control Track** (Utility Field Crew Safety & Dispatch)  
-> 2. **Artificial Intelligence (Most Creative Use of AI)** — Presented by *UF Data Science & Informatics (DSI)*
-
 ---
 
 ## 🎯 Executive Summary
@@ -168,22 +163,6 @@ heron-planit-control/
         ├── CrewSafe/               # Native Swift source code (iOS 17+)
         └── project.yml             # Declarative XcodeGen project specification
 ```
-
----
-
-## 🏆 Hackathon Track Alignment
-
-### 1. Sperry Tech — PlanIt Control Track
-* **Direct Utility Application**: Built around electric utility field safety, monitoring 346 EIA-860M Florida energy facilities across all 67 counties.
-* **OSHA Compliance**: Implements the mandatory 10-mile lightning stop-work rule with an automated 30-minute all-clear countdown timer.
-* **Supervisor Control Room**: The Sites tab ranks facilities statewide by hazard index, helping dispatchers direct resources to the highest-risk locations.
-* **Field Crew Incident Reporting**: Enables linemen to document and submit jobsite hazards with photo attachments and verified GPS coordinates.
-
-### 2. Artificial Intelligence (Most Creative Use of AI) — UF Data Science & Informatics
-* **Non-Trivial Multi-Hazard ML Model**: Fuses 28 meteorological, hydrological, and geotechnical features to classify 5 operational hazard states.
-* **Rigorous Benchmarking**: Evaluated HistGradientBoosting against PyTorch Neural Networks, Balanced Random Forests, and Logistic Regression on 47,150 historical records.
-* **Continuous Learning Pipeline**: Real-time telemetry is buffered and used to retrain the model with automated validation checks before hot-swapping into production.
-* **Calibrated Output with Plausibility Gates**: Converts probabilistic model outputs into a continuous 0–10 Hazard Index, paired with physical plausibility gates to minimize false alarms.
 
 ---
 
