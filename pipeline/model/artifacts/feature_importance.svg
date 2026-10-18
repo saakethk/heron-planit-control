@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 750 480" width="100%" height="100%" style="background:#0f172a; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;">
+<text x="375.0" y="35" fill="#f8fafc" font-size="18" font-weight="bold" text-anchor="middle">Top 15 Feature Importances (GBDT Multi-Hazard)</text>
+<text x="248" y="74.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>Longitude</text>
+<rect x="260" y="60" width="430.0" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="698.0" y="74.0" fill="#94a3b8" font-size="10" font-mono>9.30%</text>
+<text x="248" y="100.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>soil_moisture_0_to_100cm_mean</text>
+<rect x="260" y="86" width="316.6759267170391" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="584.6759267170391" y="100.0" fill="#94a3b8" font-size="10" font-mono>6.85%</text>
+<text x="248" y="126.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>et0_fao_evapotranspiration</text>
+<rect x="260" y="112" width="313.33431478965633" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="581.3343147896563" y="126.0" fill="#94a3b8" font-size="10" font-mono>6.78%</text>
+<text x="248" y="152.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>fema_flood_risk_score</text>
+<rect x="260" y="138" width="235.47417933609955" height="20" rx="4" fill="#38bdf8" opacity="0.9"/>
+<text x="503.47417933609955" y="152.0" fill="#94a3b8" font-size="10" font-mono>5.09%</text>
+<text x="248" y="178.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>Latitude</text>
+<rect x="260" y="164" width="230.71234091399472" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="498.7123409139947" y="178.0" fill="#94a3b8" font-size="10" font-mono>4.99%</text>
+<text x="248" y="204.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>relative_humidity_2m_max</text>
+<rect x="260" y="190" width="217.32799687600712" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="485.3279968760071" y="204.0" fill="#94a3b8" font-size="10" font-mono>4.70%</text>
+<text x="248" y="230.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>fema_is_coastal_hazard</text>
+<rect x="260" y="216" width="209.9870276564784" height="20" rx="4" fill="#38bdf8" opacity="0.9"/>
+<text x="477.9870276564784" y="230.0" fill="#94a3b8" font-size="10" font-mono>4.54%</text>
+<text x="248" y="256.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>apparent_temperature_min</text>
+<rect x="260" y="242" width="190.68800951504372" height="20" rx="4" fill="#f59e0b" opacity="0.9"/>
+<text x="458.68800951504375" y="256.0" fill="#94a3b8" font-size="10" font-mono>4.12%</text>
+<text x="248" y="282.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>apparent_temperature_max</text>
+<rect x="260" y="268" width="181.52733266979808" height="20" rx="4" fill="#f59e0b" opacity="0.9"/>
+<text x="449.52733266979806" y="282.0" fill="#94a3b8" font-size="10" font-mono>3.93%</text>
+<text x="248" y="308.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>relative_humidity_2m_min</text>
+<rect x="260" y="294" width="170.0297352303957" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="438.02973523039566" y="308.0" fill="#94a3b8" font-size="10" font-mono>3.68%</text>
+<text x="248" y="334.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>apparent_temperature_mean</text>
+<rect x="260" y="320" width="154.15251650655438" height="20" rx="4" fill="#f59e0b" opacity="0.9"/>
+<text x="422.1525165065544" y="334.0" fill="#94a3b8" font-size="10" font-mono>3.33%</text>
+<text x="248" y="360.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>rain_sum</text>
+<rect x="260" y="346" width="153.52004473178786" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="421.52004473178783" y="360.0" fill="#94a3b8" font-size="10" font-mono>3.32%</text>
+<text x="248" y="386.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>fema_flood_precip_compound</text>
+<rect x="260" y="372" width="151.22416870999717" height="20" rx="4" fill="#38bdf8" opacity="0.9"/>
+<text x="419.2241687099972" y="386.0" fill="#94a3b8" font-size="10" font-mono>3.27%</text>
+<text x="248" y="412.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>temperature_2m_max</text>
+<rect x="260" y="398" width="149.31376630490448" height="20" rx="4" fill="#f59e0b" opacity="0.9"/>
+<text x="417.31376630490445" y="412.0" fill="#94a3b8" font-size="10" font-mono>3.23%</text>
+<text x="248" y="438.0" fill="#cbd5e1" font-size="11" text-anchor="end" font-mono>wind_gusts_10m_max</text>
+<rect x="260" y="424" width="144.90650606388522" height="20" rx="4" fill="#10b981" opacity="0.9"/>
+<text x="412.9065060638852" y="438.0" fill="#94a3b8" font-size="10" font-mono>3.13%</text>
+</svg>
