@@ -80,10 +80,7 @@ struct SiteDetailView: View {
             }
 
             if let conditions = site.conditions {
-                VStack(alignment: .leading, spacing: 10) {
-                    SectionHeader(title: "Live Meteorological Telemetry")
-                    ConditionsRow(conditions: conditions)
-                }
+                SiteWeatherCard(site: site, conditions: conditions)
             }
 
             VStack(alignment: .leading, spacing: 10) {

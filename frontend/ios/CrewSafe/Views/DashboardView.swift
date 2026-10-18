@@ -18,7 +18,7 @@ struct DashboardView: View {
                         lightningSection(site)
                         indexCard(site)
                         if let conditions = site.conditions {
-                            ConditionsRow(conditions: conditions)
+                            SiteWeatherCard(site: site, conditions: conditions)
                         }
                         briefingSection
                         driversCard(site)
