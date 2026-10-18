@@ -44,7 +44,15 @@ def generate_control_samples(
 
         df = pd.read_csv(input_path, on_bad_lines="skip", low_memory=False)
 
-    date_col = "EventDate" if "EventDate" in df.columns else "Event Date"
+    if "Date" in df.columns:
+        date_col = "Date"
+    elif "EventDate" in df.columns:
+        date_col = "EventDate"
+    elif "Event Date" in df.columns:
+        date_col = "Event Date"
+    else:
+        raise KeyError("Expected Date or EventDate column in input data.")
+
     df["ParsedDate"] = pd.to_datetime(df[date_col], errors="coerce").dt.date
 
     # Define deterministic search interval

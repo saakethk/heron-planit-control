@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Optional, Union
 import pandas as pd
 
-from pipeline.sources.osha_incident_data.helpers.transform_helper import classify_narrative
-from pipeline.sources.osha_incident_data.helper.load_helper import generate_control_samples
+from pipeline.steps.osha_incident_data.helpers.transform_helper import classify_narrative
+from pipeline.steps.osha_incident_data.helpers.load_helper import generate_control_samples
 
 
 def filter_environmental_incidents(
@@ -110,10 +110,6 @@ def transform_incident_data(
     # Merge into single clean dataset with essential labels
     print("[TRANSFORM] Compiling unified incident & non-incident dataset...")
     unified_df = build_unified_dataset(filtered_df, control_df)
-
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    unified_df.to_csv(output_path, index=False)
-    print(f"[TRANSFORM] Saved {len(unified_df):,} total records ({len(filtered_df):,} incident, {len(control_df):,} non-incident) -> {output_path.name}")
 
     input_path.unlink()
     print(f"[CLEANUP] Removed raw source file: {input_path.name}")

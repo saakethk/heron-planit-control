@@ -117,8 +117,6 @@ EXCLUSIONS = {
     ),
 }
 
-CRITICAL_EVENTS = {"Lightning", "Wildfire", "Flood"}
-
 PRIORITY_ORDER = [
     "Lightning",
     "Extreme Heat",
@@ -161,9 +159,6 @@ def classify_narrative(narrative: Optional[str]) -> str:
                 re.IGNORECASE,
             ):
                 continue
-
-        if category in CRITICAL_EVENTS:
-            return "Critical Events (Lightning, Wildfire, Flood)"
 
         return category
 
