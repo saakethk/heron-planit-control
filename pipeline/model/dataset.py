@@ -42,6 +42,11 @@ FEATURE_COLS = [
     "month_cos",
     "Latitude",
     "Longitude",
+    # Official FEMA National Flood Hazard Layer (NFHL) features
+    "fema_is_sfha",
+    "fema_is_coastal_hazard",
+    "fema_flood_risk_score",
+    "fema_flood_precip_compound",
 ]
 
 CORE_METEOROLOGICAL_CLASSES = [
@@ -68,7 +73,7 @@ IDX_TO_CLASS = {i: name for i, name in enumerate(CLASS_NAMES)}
 
 
 def load_raw_dataset(db_path: Path, only_sampled: bool = True) -> pd.DataFrame:
-    """Queries and joins incident labels with weather metrics on ID.
+    """Queries and joins incident labels with weather metrics and FEMA flood hazard data on ID.
     
     If `only_sampled=True` and rows with `is_sampled = 1` exist, restricts loading
     strictly to those representative marked rows.
@@ -112,9 +117,13 @@ def load_raw_dataset(db_path: Path, only_sampled: bool = True) -> pd.DataFrame:
                 w.relative_humidity_2m_max,
                 w.relative_humidity_2m_min,
                 w.soil_moisture_0_to_100cm_mean,
-                w.soil_temperature_0_to_100cm_mean
+                w.soil_temperature_0_to_100cm_mean,
+                COALESCE(f.is_sfha, 0) as fema_is_sfha,
+                COALESCE(f.is_coastal_hazard, 0) as fema_is_coastal_hazard,
+                COALESCE(f.fema_flood_risk_score, 0.05) as fema_flood_risk_score
             FROM clean_incident_data c
             INNER JOIN weather_data w ON c.ID = w.ID
+            LEFT JOIN fema_flood_risk f ON round(c.Latitude, 4) = f.Latitude AND round(c.Longitude, 4) = f.Longitude
             {where_clause}
         """
         df = pd.read_sql(query, conn)
@@ -138,7 +147,7 @@ def engineer_features(
     df: pd.DataFrame,
     class_to_idx: Optional[Dict[str, int]] = None,
 ) -> pd.DataFrame:
-    """Adds cyclical month seasonality and cleans numerical values."""
+    """Adds cyclical seasonality, FEMA compound interactions, and cleans numerical values."""
     if class_to_idx is None:
         class_to_idx = CLASS_TO_IDX
 
@@ -149,6 +158,11 @@ def engineer_features(
     # Cyclical sin/cos encoding for calendar month (1 to 12)
     df["month_sin"] = np.sin(2 * np.pi * month / 12.0)
     df["month_cos"] = np.cos(2 * np.pi * month / 12.0)
+
+    # FEMA Flood Risk compound interaction with precipitation
+    precip = pd.to_numeric(df.get("precipitation_sum", 0.0), errors="coerce").fillna(0.0)
+    fema_score = pd.to_numeric(df.get("fema_flood_risk_score", 0.05), errors="coerce").fillna(0.05)
+    df["fema_flood_precip_compound"] = fema_score * precip
 
     # Target indices
     df["target_class"] = df["incident_type"].map(class_to_idx)

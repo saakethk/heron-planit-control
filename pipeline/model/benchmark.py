@@ -183,8 +183,14 @@ def run_benchmark():
     import joblib
     artifact_dir = Path(__file__).resolve().parent / "artifacts"
     artifact_dir.mkdir(parents=True, exist_ok=True)
-    best_obj = gbdt_model if best_model_name == "Hist Gradient Boosting (GBDT)" else rf_model
-    joblib.dump(best_obj, artifact_dir / "best_hazard_model.joblib")
+    if best_model_name == "Multi-Task HazardNet (PyTorch)":
+        torch.save(nn_model.state_dict(), artifact_dir / "best_hazard_net.pt")
+        joblib.dump(gbdt_model, artifact_dir / "best_hazard_model.joblib")
+    elif best_model_name == "Hist Gradient Boosting (GBDT)":
+        joblib.dump(gbdt_model, artifact_dir / "best_hazard_model.joblib")
+    else:
+        joblib.dump(rf_model, artifact_dir / "best_hazard_model.joblib")
+
     joblib.dump(data["scaler"], artifact_dir / "hazard_scaler.joblib")
     print(f"\n[ARTIFACT] Saved top model ({best_model_name}) and scaler to {artifact_dir}/")
 
