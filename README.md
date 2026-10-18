@@ -21,6 +21,19 @@ Heron fuses high-frequency telemetry from orbital weather satellites, ground met
 
 ---
 
+## 📋 Fulfillment of PlanIt Control Requirements
+
+| Challenge Requirement | Specification | Heron Implementation |
+| :--- | :--- | :--- |
+| **1. One Combined Risk Picture Per Site** | *Using at least 50 actual power plant locations, combine weather, extreme heat, lightning, flooding, wildfire, soil saturation, and wildlife sightings into one picture per site.* | **346 Operating Florida Power Plants** (EIA-860M federal registry, ~7x the minimum requirement). Ingests Open-Meteo, ECMWF ERA5-Land soil moisture, FEMA NFHL flood zones, GOES-19 lightning, and crowd-sourced field reports into a unified 6-metric telemetry grid per site. |
+| **2. Instant Dangerous Condition Alerts** | *Warn crews as soon as risk spikes. Lightning within 10 miles triggers stop-work with a 30-minute all-clear countdown that restarts with each new strike. Flooding triggers after heavy rain.* | **Sub-Second Satellite Lightning Tracking**: NOAA GOES-19 GLM orbital detection triggers an automated **10-mile Stop-Work mandate** with a persistent 30-minute all-clear countdown timer (resetting on each strike). **Flood Alerts**: Combines NWS CAP 1.2 alerts and FEMA 100-year Special Flood Hazard Area (SFHA Zone A/AE) saturation rules. |
+| **3. Daily Next-Day Safety Briefing** | *Every evening at 6 PM local time, it sends a next-day safety report.* | **Automated 6 PM Briefing Pipeline**: Generates a forward-looking 24–48h meteorological risk outlook across followed job sites, pushed via iOS `.timeSensitive` notifications and rendered at the top of the **Today** tab. |
+| **4. Crew Hazard Reporting** | *Crew members snap a photo, pin a hazard to the site map, and share instantly to team and project database (Waze-style).* | **In-App Hazard Reporting**: Field linemen capture photos directly from the camera/library, automatically stamp high-accuracy GPS coordinates, select hazard categories (e.g. Wildlife/Gator, Mud/Soil, Debris), and broadcast to the control room and persistent database in real time. |
+| **5. Supervisor PlanIt Dashboard** | *A map that ranks sites by risk, showing supervisors where to focus attention and resources first.* | **Statewide Risk Matrix & Map**: Interactive MapKit map pinning all 346 power facilities across Florida, featuring a bottom-docked **"Risk Near You"** strip ranking sites from highest to lowest Hazard Index, with rapid filters for Lightning, Flood, Heat, and Wildfire. |
+| **6. Machine Learning Hazard Index (0–10)** | *A machine learning (ML) model trained on historical weather and environmental data tied to hazards on-site workers face.* | **Calibrated Multi-Hazard Model**: Gradient Boosted Decision Tree (HistGradientBoosting) trained on **47,150 historical records** (OSHA Severe Injury Reports, NOAA Storm Events, NIFC Wildfires, FEMA floodplains), achieving **94.5% test accuracy (0.945 Macro F1)** across 28 physical features and outputting a calibrated 0–10 hazard score. |
+
+---
+
 ## 🏗 High-Level Architecture
 
 <p align="center">
