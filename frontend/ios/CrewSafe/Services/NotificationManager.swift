@@ -109,7 +109,7 @@ final class NotificationManager: NSObject {
         center.removePendingNotificationRequests(withIdentifiers: [Identifier.dailyBriefing])
     }
 
-    func sendTestBriefing(summary: String?, after seconds: TimeInterval = 5) {
+    func sendTestBriefing(summary: String?, after seconds: TimeInterval = 2) {
         add(
             id: "test-briefing-\(UUID().uuidString)",
             content: briefingContent(summary: summary),
@@ -121,6 +121,7 @@ final class NotificationManager: NSObject {
         content.title = "Tomorrow's safety briefing"
         content.body = summary ?? "Your next-day hazard outlook is ready. Review site risks before tomorrow's shift."
         content.sound = .default
+        content.interruptionLevel = .timeSensitive
         content.categoryIdentifier = Category.dailyBriefing
         return content
     }

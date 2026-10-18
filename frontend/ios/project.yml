@@ -46,7 +46,7 @@ targets:
         # Phone Debug builds reach the backend on this Mac. Set to your Mac's
         # `scutil --get LocalHostName` plus ".local", or its IP address.
         Debug:
-          CREWSAFE_DEV_SERVER_HOST: MacBook-Air-4.local
+          CREWSAFE_DEV_SERVER_HOST: 10.136.45.252
         Release:
           CREWSAFE_DEV_SERVER_HOST: ""
     info:

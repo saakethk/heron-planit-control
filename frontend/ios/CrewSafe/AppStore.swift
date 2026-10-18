@@ -310,9 +310,10 @@ final class AppStore {
     }
 
     private func receive(_ alert: HazardAlert) {
-        guard isSubscribed(alert.siteId), !alerts.contains(where: { $0.id == alert.id }) else { return }
+        let isBriefing = alert.source == "Briefing" || alert.title.localizedCaseInsensitiveContains("briefing")
+        guard isBriefing || isSubscribed(alert.siteId), !alerts.contains(where: { $0.id == alert.id }) else { return }
         insertAlert(alert)
-        if alert.severity >= .warning || alert.siteId == homeSiteId {
+        if isBriefing || alert.severity >= .warning || alert.siteId == homeSiteId {
             notifications.post(alert: alert, siteName: siteName(for: alert.siteId))
         }
     }
@@ -569,12 +570,10 @@ final class AppStore {
     }
 
     func sendTestBriefing() {
-        if usesMockBackend {
-            notifications.sendTestBriefing(summary: nextDayBriefing?.summary)
-            return
-        }
-        Task {
-            if await runLiveSimulation(kind: "briefing", siteId: homeSiteId) {
+        notifications.sendTestBriefing(summary: nextDayBriefing?.summary, after: 2)
+        if !usesMockBackend {
+            Task {
+                _ = await runLiveSimulation(kind: "briefing", siteId: homeSiteId)
                 await refresh()
             }
         }

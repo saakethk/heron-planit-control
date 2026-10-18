@@ -29,8 +29,13 @@ struct SettingsView: View {
                     Toggle("6 PM next-day briefing", isOn: Binding(
                         get: { store.dailyBriefingEnabled },
                         set: { store.setDailyBriefing(enabled: $0) }))
+                    Button("Send test briefing notification") {
+                        store.sendTestBriefing()
+                    }
                 } header: {
                     Text("Notifications")
+                } footer: {
+                    Text("Daily briefings notify at 6 PM. Tap 'Send test briefing notification' to preview the notification on your phone.")
                 }
 
                 Section("Backend") {
