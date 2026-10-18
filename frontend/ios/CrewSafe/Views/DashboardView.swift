@@ -212,7 +212,7 @@ struct DashboardView: View {
 
                 // Footer metadata
                 HStack {
-                    Label("Model inference · updated \(site.updatedAt.relativeShort)", systemImage: "clock")
+                    Label("Model active · Weather obs \(site.updatedAt.shortTime)", systemImage: "sparkles")
                         .font(.caption2)
                         .foregroundStyle(Palette.tertiaryText)
 
